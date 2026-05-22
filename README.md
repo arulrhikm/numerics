@@ -85,25 +85,11 @@ triples are identical across the two figures; only the y-axis differs.
 | Number of ε samples                              | `50`                                 | `--eps-points`                    |
 | `q_min, q_max`                                   | `1, 10`                              | `--q-min`, `--q-max`              |
 | `‖b‖₁²` brute-force cap (reject above)           | `100`                                | `--brute-bnorm-sq-max`            |
-| λ-comm model                                     | `lemma57_fixed` (or `legacy`)        | `--lambda-mode`                   |
 | System size `n` (gate-depth only)                | `299`                                | `--n-sys`                         |
 | Hide `p = 1` Richardson points with `‖b‖₁² >` …  | `1000`                               | `--omit-p1-sample-overhead-above` |
 
 Run `python plotting/plot_overhead.py --help` (or `plot_gate_depth.py --help`)
 for the complete option list.
-
-## `richardson.py` public API
-
-- `compute_min_samples(errors, *, p, m_max=20, q_min=1, q_max=None, ...)` —
-  search Richardson grids and return `(m_per_ε, base_per_ε, q_grid_per_ε)`.
-- `get_richardson_coefficients(s_list, p, m)` — solve `V b = ê₁` for `b`.
-- `b_norm1(b)`, `b_suppressed_norm(b, q, m, p)` — coefficient norms.
-- `compute_lambda_scale(A, m, p, n)` — λ-comm ratio.
-- `compute_steps_plane_wave(error, m, m_expr, p, A, n)` and
-  `compute_steps_gate_depth(...)` — Trotter / Richardson step counts.
-- `gate_overhead(p)` — `C_p`: `1, 2, 10, 50, …` for `p = 1, 2, 4, 6, …`.
-- `richardson_b_over_eps_prefactor(p)` — `K` in `(K · ‖b‖₁ / ε)^(1/(σ(m-1)+p))`.
-- `set_lambda_scale_mode(mode)` — `'lemma57_fixed'` (default) or `'legacy'`.
 
 ## Notes on the gate-depth figure
 
