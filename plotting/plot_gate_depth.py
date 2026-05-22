@@ -1,0 +1,274 @@
+"""Gate-depth figure: per-order curves (left) and order-envelope (right).
+
+Same ``compute_min_samples`` schedules as the overhead figure, but with
+``compute_steps_gate_depth`` (``n = 299`` by default) on the y-axis. The left
+panel additionally overlays a closed-form vanilla Trotter ``p = 6`` line (no
+Richardson ``p = 6`` search is performed).
+"""
+
+from __future__ import annotations
+
+import argparse
+import sys
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+_ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
+import richardson as rt
+from plotting.common_cli import (
+    add_shared_grid_args,
+    add_shared_search_args,
+    parse_orders,
+    resolve_output_dir,
+)
+from plotting import common as cm
+
+FS_AXIS = 15
+FS_LEGEND = 13
+FS_SUPTITLE = 17
+LEGEND_LINEWIDTH = 2.25
+LEGEND_HANDLELEN = 2.75
+PLOT_LW = 2.25
+ORDER_COLORS = {1: "#2563eb", 2: "#16a34a", 4: "#9333ea", 6: "#ea580c"}
+TROTTER_EXTRA_ORDER = 6
+Y_LABEL = r"$c \times$ (number of steps)"
+
+
+def _analytic_trotter_gate_depth(errors: np.ndarray, p: int) -> np.ndarray:
+    """Closed-form vanilla Trotter gate depth (matches ``rt.compute_steps_gate_depth``)."""
+    c = float(rt.gate_overhead(p))
+    return c ** (1 + 1 / p) * (errors ** (-1.0 / p)) * ((2 / (1 + p)) ** (1.0 / p))
+
+
+def _style_ax(ax, title=None, ylabel=Y_LABEL):
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    ax.set_xlabel(r"Precision  $\varepsilon$", fontsize=FS_AXIS)
+    ax.set_ylabel(ylabel, fontsize=FS_AXIS)
+    if title is not None:
+        ax.set_title(title, fontsize=FS_AXIS)
+    ax.tick_params(axis="both", labelsize=FS_AXIS - 2)
+    ax.grid(True, which="major", ls="-", alpha=0.25)
+    ax.grid(True, which="minor", ls=":", alpha=0.12)
+
+
+def _legend(ax, *, ncol: int = 1, loc: str = "upper right"):
+    leg = ax.legend(
+        fontsize=FS_LEGEND - 1,
+        loc=loc,
+        framealpha=0.92,
+        ncol=ncol,
+        handlelength=LEGEND_HANDLELEN * 0.92,
+        handletextpad=0.5,
+        borderpad=0.35,
+        labelspacing=0.35,
+        columnspacing=0.9,
+    )
+    for line in leg.get_lines():
+        line.set_linewidth(LEGEND_LINEWIDTH)
+        mk = line.get_marker()
+        if mk is not None and str(mk).lower() not in ("none", ""):
+            line.set_markersize(8.5)
+            line.set_markeredgewidth(0.7)
+    return leg
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Gate-depth figure (per-order + envelope).")
+    parser.add_argument("--out-dir", type=str, default="plots", help="Output directory.")
+    parser.add_argument("--output", type=str, default="gate_depth.png", help="Titled output filename.")
+    add_shared_grid_args(parser, default_q_max=10)
+    parser.set_defaults(eps_log_max=np.log10(0.9))
+    parser.add_argument("--orders", type=str, default="1,2,4", help="Comma-separated Trotter orders p.")
+    add_shared_search_args(parser)
+    parser.add_argument(
+        "--n-sys",
+        type=int,
+        default=299,
+        help="System size n passed to compute_steps_gate_depth (default 299).",
+    )
+    parser.add_argument(
+        "--no-cropped",
+        action="store_true",
+        help="Skip the caption-friendly (no-title) companion file.",
+    )
+    return parser.parse_args()
+
+
+def _build_figure(
+    *,
+    orders: list[int],
+    errors: np.ndarray,
+    results_by_order: dict,
+    b2_lab: str,
+    omit_titles: bool,
+) -> plt.Figure:
+    fig_h = 5.2 if omit_titles else 6.2
+    fig, axes = plt.subplots(1, 2, figsize=(14.5, fig_h), constrained_layout=True)
+    ax_left, ax_right = axes
+
+    for p in orders:
+        col = ORDER_COLORS.get(p, "#334155")
+        trot = results_by_order[p]["wc"]["trotter"]
+        rw = results_by_order[p]["wc"]["richardson"]
+        ro = results_by_order[p]["opt"]["richardson"]
+        rich_best = np.minimum(rw, ro)
+        c_int = int(rt.gate_overhead(p))
+        ax_left.plot(
+            errors, trot, "-", color=col, linewidth=PLOT_LW,
+            label=rf"Trotter $p={p}$, $C={c_int}$",
+        )
+        ax_left.plot(
+            errors, rich_best, "--", color=col, linewidth=PLOT_LW,
+            label=rf"Richardson $p={p}$",
+        )
+
+    p6 = TROTTER_EXTRA_ORDER
+    col6 = ORDER_COLORS[p6]
+    trot6 = _analytic_trotter_gate_depth(errors, p6)
+    c6 = int(rt.gate_overhead(p6))
+    ax_left.plot(
+        errors, trot6, "-", color=col6, linewidth=PLOT_LW,
+        label=rf"Trotter $p={p6}$, $C={c6}$",
+    )
+
+    left_title = None if omit_titles else rf"Per order ($\|\mathbf{{b}}\|_1^2 \leq {b2_lab}$)"
+    _style_ax(ax_left, title=left_title, ylabel=Y_LABEL)
+    _legend(ax_left, ncol=2, loc="upper right")
+
+    trotter_envs = [results_by_order[p]["wc"]["trotter"] for p in orders] + [trot6]
+    rich_mins = [
+        np.minimum(results_by_order[p]["wc"]["richardson"], results_by_order[p]["opt"]["richardson"])
+        for p in orders
+    ]
+    trotter_best = np.minimum.reduce(trotter_envs)
+    rich_best_env = np.minimum.reduce(rich_mins)
+    best_trot_p_tex = ",".join(str(x) for x in sorted(set(orders) | {TROTTER_EXTRA_ORDER}))
+
+    for p in orders:
+        col = ORDER_COLORS.get(p, "#334155")
+        ax_right.plot(errors, results_by_order[p]["wc"]["trotter"], "-",
+                      color=col, linewidth=1.4, alpha=0.2, zorder=1)
+        ax_right.plot(
+            errors,
+            np.minimum(results_by_order[p]["wc"]["richardson"], results_by_order[p]["opt"]["richardson"]),
+            "--", color=col, linewidth=1.4, alpha=0.2, zorder=1,
+        )
+    ax_right.plot(errors, trot6, "-", color=col6, linewidth=1.4, alpha=0.2, zorder=1)
+
+    ax_right.plot(
+        errors, trotter_best, "k-", linewidth=PLOT_LW + 0.35, zorder=4,
+        label=rf"Best Trotter $\{{{best_trot_p_tex}\}}$",
+    )
+    ax_right.plot(
+        errors, rich_best_env, "k--",
+        linewidth=PLOT_LW + 0.35,
+        marker="s", markersize=5.5,
+        markevery=max(1, len(errors) // 10),
+        markeredgecolor="black", markeredgewidth=0.6, markerfacecolor="white",
+        zorder=4, label=r"Best Richardson",
+    )
+    right_title = None if omit_titles else "Envelope"
+    _style_ax(ax_right, title=right_title, ylabel=Y_LABEL)
+    leg_r = _legend(ax_right, ncol=1, loc="upper right")
+    for line in leg_r.get_lines():
+        line.set_linewidth(PLOT_LW + 0.35)
+
+    if not omit_titles:
+        fig.suptitle("Gate depth", fontsize=FS_SUPTITLE, fontweight="600", y=1.02)
+    return fig
+
+
+def main() -> None:
+    args = parse_args()
+    rt.set_lambda_scale_mode(args.lambda_mode)
+    plt.rcParams["pdf.fonttype"] = 42
+
+    output_dir = resolve_output_dir(_ROOT, args.out_dir)
+    orders = parse_orders(args.orders)
+    errors = np.logspace(args.eps_log_max, args.eps_log_min, num=int(args.eps_points))
+    b2_cap = float(args.brute_bnorm_sq_max)
+    n_sys = int(args.n_sys)
+
+    print(
+        f"Gate depth: eps in [{10**args.eps_log_min:g}, {10**args.eps_log_max:g}] "
+        f"({args.eps_points} pts), q in [{args.q_min},{args.q_max}], "
+        f"||b||_1^2 cap={b2_cap:g}, n_sys={n_sys}, orders={orders}, "
+        f"lambda-mode={args.lambda_mode}"
+    )
+
+    results_by_order = cm.compute_results(
+        errors=errors,
+        orders=orders,
+        q_max=int(args.q_max),
+        q_min=int(args.q_min),
+        b2_cap=b2_cap,
+        brute_permutations=bool(args.brute_permutations),
+        brute_permutations_max_count=int(args.brute_permutations_max_count),
+        step_mode="gate_depth",
+        n_sys=n_sys,
+    )
+
+    b2_lab = str(int(b2_cap)) if abs(b2_cap - round(b2_cap)) < 1e-9 else f"{b2_cap:g}"
+
+    def save(omit_titles: bool, name: str) -> None:
+        fig = _build_figure(
+            orders=orders, errors=errors, results_by_order=results_by_order,
+            b2_lab=b2_lab, omit_titles=omit_titles,
+        )
+        path = output_dir / name
+        fig.savefig(path, bbox_inches="tight")
+        plt.close(fig)
+        print(f"  Saved {path}")
+
+    stem = Path(args.output)
+    save(omit_titles=False, name=args.output)
+    if not args.no_cropped:
+        save(omit_titles=True, name=f"{stem.stem}_cropped{stem.suffix}")
+
+    p6 = TROTTER_EXTRA_ORDER
+    c6 = int(rt.gate_overhead(p6))
+    md_path, json_path = cm.write_params_sidecar(
+        output_dir=output_dir,
+        stem=stem.stem,
+        title="Gate-depth figure parameters",
+        settings={
+            "script": "plotting/plot_gate_depth.py",
+            "step_mode": "gate_depth",
+            "λ-mode": args.lambda_mode,
+            "orders (p) searched": ", ".join(str(p) for p in orders),
+            "ε grid": (
+                f"{args.eps_points} points, log10 in "
+                f"[{args.eps_log_min:.6g}, {args.eps_log_max:.6g}]"
+            ),
+            "q_min, q_max": f"{args.q_min}, {args.q_max}",
+            "‖b‖₁² search cap": f"{b2_cap:g}",
+            "brute permutations": str(bool(args.brute_permutations)),
+            "system size n (λ-comm)": str(n_sys),
+        },
+        errors=errors,
+        orders=orders,
+        results_by_order=results_by_order,
+        extras={
+            f"Trotter p = {p6} (analytic, no Richardson)": (
+                f"closed form C_p^(1+1/p) · ε^(-1/p) · (2/(1+p))^(1/p) with C_{p6} = {c6}"
+            ),
+            "envelope (right panel)": (
+                "Best Trotter taken over p ∈ "
+                f"{{{', '.join(str(x) for x in sorted(set(orders) | {p6}))}}}; "
+                "Best Richardson taken over p ∈ "
+                f"{{{', '.join(str(x) for x in orders)}}} and both schedules."
+            ),
+        },
+    )
+    print(f"  Saved {md_path}")
+    print(f"  Saved {json_path}")
+
+
+if __name__ == "__main__":
+    main()
