@@ -95,8 +95,12 @@ def get_sample_points(m: int) -> tuple[list[float], list[int]]:
     """Well-conditioned grid of refinement factors ``q_k`` (Low–Kliuchnikov–Wiebe).
 
     Returns ``(s_k, q_k)`` with ``s_k = 1 / q_k`` and the ``q_k`` made distinct
-    by bumping any duplicates upward.
+    by bumping any duplicates upward. For ``m = 1``, returns the degenerate
+    single-point grid ``q = [1]`` (plain Trotter at full resolution).
     """
+    m = int(m)
+    if m == 1:
+        return [1.0], [1]
     numerator = (np.sqrt(8) * m) / np.pi
     q_integers: list[int] = []
     for k in range(1, m + 1):
@@ -269,10 +273,11 @@ def compute_min_samples(
     ``m ∈ [1, m_max]`` and, for each ``m``, either:
 
       * the well-conditioned grid ``q_k`` from ``get_sample_points`` (when
-        ``well_conditioned_formula=True``), or
-      * every ``m``-subset of ``{q_min, …, q_max}`` (``itertools.combinations``),
+        ``well_conditioned_formula=True``; ``m = 1`` uses ``q = [1]``), or
+      * every ``m``-subset of ``{q_min, …, q_max}`` for ``m ≥ 2`` (``itertools.combinations``),
         optionally permuted when ``brute_permutations`` is set and the
-        permutation count is within ``brute_permutations_max_count``.
+        permutation count is within ``brute_permutations_max_count``; for ``m = 1``
+        only ``q = [1]`` is considered (no other single-``q`` grids).
 
     Grids whose ``‖b‖₁² > brute_force_b_norm1_sq_max`` are rejected before
     scoring (brute-force branch only). The winning grid minimizes the full
@@ -305,19 +310,21 @@ def compute_min_samples(
                     best = (m, base, list(q_grid))
                 continue
 
-            if len(q_range) < m:
-                break
+            if m == 1:
+                combos = ((1,),)
+            else:
+                if len(q_range) < m:
+                    break
+                use_perm = (
+                    brute_permutations
+                    and math.perm(len(q_range), m) <= brute_permutations_max_count
+                )
+                combos = (
+                    itertools.permutations(q_range, m) if use_perm
+                    else itertools.combinations(q_range, m)
+                )
 
-            use_perm = (
-                brute_permutations
-                and math.perm(len(q_range), m) <= brute_permutations_max_count
-            )
-            iterator = (
-                itertools.permutations(q_range, m) if use_perm
-                else itertools.combinations(q_range, m)
-            )
-
-            for combo in iterator:
+            for combo in combos:
                 q_grid = list(combo)
                 s_list = [1.0 / q for q in q_grid]
                 b_list, _ = get_richardson_coefficients(s_list, p, m)
