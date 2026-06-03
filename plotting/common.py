@@ -70,6 +70,9 @@ def compute_results(
     for p in orders:
         results_by_order[p] = {}
         for mode_name, mode_flags in schedules:
+            if mode_name == "wc" and not rt.wc_extrapolation_valid_for_p(p):
+                print(f"  p={p}, mode={mode_name}: skipped (WC requires even p)")
+                continue
             print(f"  p={p}, mode={mode_name} ({step_mode}) ...")
             best_m, best_base, best_q = rt.compute_min_samples(
                 errors,
@@ -90,6 +93,7 @@ def compute_results(
             btilde1: list[float] = []
             b_coeffs: list[list[float]] = []
             q_grids: list[list[int]] = []
+            use_wc = mode_name == "wc"
             for eps, m, m_expr, q_grid in zip(errors, best_m, best_base, best_q):
                 t, r = _steps_for_error(
                     step_mode=step_mode, error=eps, m=m, m_expr=m_expr, p=p,
@@ -98,7 +102,11 @@ def compute_results(
                 trotter_steps.append(t)
                 richardson_steps.append(r)
                 s_list = [1.0 / q for q in q_grid]
-                b, _ = rt.get_richardson_coefficients(s_list, p, m)
+                b, _ = (
+                    rt.get_wc_richardson_coefficients(s_list, m)
+                    if use_wc
+                    else rt.get_richardson_coefficients(s_list, p, m)
+                )
                 bnorm1.append(rt.b_norm1(b))
                 btilde1.append(rt.b_suppressed_norm(b, q_grid, m, p))
                 b_coeffs.append([float(x) for x in b])
@@ -178,6 +186,8 @@ def write_params_sidecar(
     for p in orders:
         json_data["results"][str(p)] = {}
         for mode in ("wc", "opt"):
+            if mode not in results_by_order[p]:
+                continue
             r = results_by_order[p][mode]
             out += [
                 f"### p = {p}, {MODE_LABEL[mode]} (`mode = {mode}`)",

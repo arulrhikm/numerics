@@ -114,10 +114,11 @@ def _build_figure(
 
     for p in orders:
         col = ORDER_COLORS.get(p, "#334155")
-        trot = results_by_order[p]["wc"]["trotter"]
-        rw = results_by_order[p]["wc"]["richardson"]
-        ro = results_by_order[p]["opt"]["richardson"]
-        rich_best = np.minimum(rw, ro)
+        r_p = results_by_order[p]
+        trot = r_p.get("wc", r_p["opt"])["trotter"]
+        ro = r_p["opt"]["richardson"]
+        rw = r_p["wc"]["richardson"] if "wc" in r_p else ro
+        rich_best = np.minimum(rw, ro) if "wc" in r_p else ro
         c_int = int(rt.gate_overhead(p))
         ax_left.plot(
             errors, trot, "-", color=col, linewidth=PLOT_LW,
@@ -141,22 +142,30 @@ def _build_figure(
     _style_ax(ax_left, title=left_title, ylabel=Y_LABEL)
     _legend(ax_left, ncol=2, loc="upper right")
 
-    trotter_envs = [results_by_order[p]["wc"]["trotter"] for p in orders] + [trot6]
-    rich_mins = [
-        np.minimum(results_by_order[p]["wc"]["richardson"], results_by_order[p]["opt"]["richardson"])
-        for p in orders
-    ]
+    trotter_envs = [results_by_order[p].get("wc", results_by_order[p]["opt"])["trotter"] for p in orders] + [trot6]
+    rich_mins = []
+    for p in orders:
+        r_p = results_by_order[p]
+        ro = r_p["opt"]["richardson"]
+        if "wc" in r_p:
+            rich_mins.append(np.minimum(r_p["wc"]["richardson"], ro))
+        else:
+            rich_mins.append(ro)
     trotter_best = np.minimum.reduce(trotter_envs)
     rich_best_env = np.minimum.reduce(rich_mins)
     best_trot_p_tex = ",".join(str(x) for x in sorted(set(orders) | {TROTTER_EXTRA_ORDER}))
 
     for p in orders:
         col = ORDER_COLORS.get(p, "#334155")
-        ax_right.plot(errors, results_by_order[p]["wc"]["trotter"], "-",
+        r_p = results_by_order[p]
+        ax_right.plot(errors, r_p.get("wc", r_p["opt"])["trotter"], "-",
                       color=col, linewidth=1.4, alpha=0.2, zorder=1)
+        ro = r_p["opt"]["richardson"]
+        rw = r_p["wc"]["richardson"] if "wc" in r_p else ro
+        rich_line = np.minimum(rw, ro) if "wc" in r_p else ro
         ax_right.plot(
             errors,
-            np.minimum(results_by_order[p]["wc"]["richardson"], results_by_order[p]["opt"]["richardson"]),
+            rich_line,
             "--", color=col, linewidth=1.4, alpha=0.2, zorder=1,
         )
     ax_right.plot(errors, trot6, "-", color=col6, linewidth=1.4, alpha=0.2, zorder=1)

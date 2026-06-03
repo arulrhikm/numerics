@@ -116,9 +116,11 @@ def _build_figure(
     last_mappable = None
     for idx, p in enumerate(orders):
         ax = axes[idx]
+        r_p = results_by_order[p]
+        trotter_baseline = r_p.get("wc", r_p["opt"])["trotter"]
         ax.plot(
             errors,
-            results_by_order[p]["wc"]["trotter"],
+            trotter_baseline,
             "-",
             color="gray",
             linewidth=2,
@@ -127,8 +129,10 @@ def _build_figure(
         )
 
         for mode, marker in (("wc", "s"), ("opt", "o")):
-            steps = np.asarray(results_by_order[p][mode]["richardson"], dtype=float)
-            so = np.asarray(results_by_order[p][mode]["sample_overhead"], dtype=float)
+            if mode not in r_p:
+                continue
+            steps = np.asarray(r_p[mode]["richardson"], dtype=float)
+            so = np.asarray(r_p[mode]["sample_overhead"], dtype=float)
             visible = cm.visible_mask_for_sample_overhead(
                 order=int(p), sample_overhead=so, omit_p1_sample_overhead_above=omit_p1
             )

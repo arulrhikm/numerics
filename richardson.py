@@ -4,7 +4,8 @@ Public API consumed by the plotting scripts:
 
 * ``compute_min_samples`` — search Richardson grids and pick the best schedule
   per target precision.
-* ``get_richardson_coefficients`` — solve the Vandermonde system for ``b``.
+* ``get_richardson_coefficients`` — p-specific Vandermonde (optimized search).
+* ``get_wc_richardson_coefficients`` — even-power WC Vandermonde (closed form).
 * ``b_norm1`` / ``b_suppressed_norm`` — coefficient norms.
 * ``compute_lambda_scale`` — λ-comm ratio (``lemma57_fixed`` / ``legacy``).
 * ``compute_steps_plane_wave`` / ``compute_steps_gate_depth`` — step counts.
@@ -119,7 +120,12 @@ def get_sample_points(m: int) -> tuple[list[float], list[int]]:
 
 
 def setup_vandermonde_matrix(s_list, p: int, m: int) -> np.ndarray:
-    """Generalized Vandermonde ``V_{jk} = s_k^{σ_{j-1}}`` (``σ_0 = 0``)."""
+    """Optimized extrapolation Vandermonde tailored to Trotter order ``p``.
+
+    Row ``j`` uses exponent ``0`` for ``j = 0``, else ``p + σ(j−1)`` with
+    ``σ = sigma_parity(p)``. This matches the leading error powers of order-``p``
+    Suzuki product formulas (``p, p+σ, p+2σ, …``).
+    """
     sigma = sigma_parity(p)
     V = np.zeros((m, m))
     for j in range(m):
@@ -129,8 +135,51 @@ def setup_vandermonde_matrix(s_list, p: int, m: int) -> np.ndarray:
     return V
 
 
+def setup_wc_vandermonde_matrix(s_list, m: int) -> np.ndarray:
+    """Well-conditioned (LKW) Vandermonde: row ``j`` has exponent ``2j``.
+
+    Prescriptive even error series starting at ``s²``; cancels ``s², s⁴, …, s^{2(m−1)}``
+    so the leading remainder is ``s^{2m}``. Independent of Trotter order ``p`` — use
+    only when the underlying error series is even (``p ∈ {2, 4, …}``).
+    """
+    m = int(m)
+    V = np.zeros((m, m))
+    for j in range(m):
+        power = 2 * j
+        for k in range(m):
+            V[j, k] = s_list[k] ** power
+    return V
+
+
+def get_wc_richardson_coefficients_closed_form(s_list) -> np.ndarray:
+    """Closed-form WC weights via Lagrange extrapolation to ``t = 0``.
+
+    For nodes ``t_k = s_k²`` the unique degree-``m−1`` polynomial with
+    ``P(0) = 1`` and ``P(t_k) = 0`` for ``k ≥ 2`` in the moment system gives
+    ``b_k = ∏_{j≠k} (−t_j) / (t_k − t_j)`` (Eq. 62 in the Trotter-mitigation note).
+    """
+    s = np.asarray(s_list, dtype=float)
+    t = s * s
+    m = len(t)
+    b = np.empty(m, dtype=float)
+    for k in range(m):
+        weight = 1.0
+        for j in range(m):
+            if j != k:
+                weight *= (-t[j]) / (t[k] - t[j])
+        b[k] = weight
+    return b
+
+
+def get_wc_richardson_coefficients(s_list, m: int) -> tuple[np.ndarray, np.ndarray]:
+    """WC Richardson coefficients ``(b, V)`` using the closed-form weights."""
+    V = setup_wc_vandermonde_matrix(s_list, m)
+    b = get_wc_richardson_coefficients_closed_form(s_list)
+    return b, V
+
+
 def get_richardson_coefficients(s_list, p: int, m: int) -> tuple[np.ndarray, np.ndarray]:
-    """Solve ``V b = ê₁`` for the Richardson coefficients ``b`` (returns ``(b, V)``)."""
+    """Solve ``V b = ê₁`` for optimized (p-specific) Richardson coefficients."""
     V = setup_vandermonde_matrix(s_list, p, m)
     e1 = np.zeros(m)
     e1[0] = 1.0
@@ -142,6 +191,11 @@ def get_richardson_coefficients(s_list, p: int, m: int) -> tuple[np.ndarray, np.
             f"(cond(V) = {np.linalg.cond(V):.2e})"
         ) from exc
     return b, V
+
+
+def wc_extrapolation_valid_for_p(p: int) -> bool:
+    """True when order ``p`` has an even error series suitable for WC extrapolation."""
+    return sigma_parity(int(p)) == 2
 
 
 def lemma57_geometric_ratio(p: int, num_points: int = 20000) -> float:
@@ -225,6 +279,14 @@ def compute_steps_gate_depth(error: float, m: int, m_expr: float, p: int,
     return trotter, richardson
 
 
+def _richardson_coefficients_for_grid(
+    s_list, *, p: int, m: int, well_conditioned: bool,
+) -> tuple[np.ndarray, np.ndarray]:
+    if well_conditioned:
+        return get_wc_richardson_coefficients(s_list, m)
+    return get_richardson_coefficients(s_list, p, m)
+
+
 def _score_grid(
     *,
     p: int,
@@ -234,6 +296,7 @@ def _score_grid(
     A: float,
     n: int,
     b_list: np.ndarray | None = None,
+    well_conditioned: bool = False,
 ) -> tuple[float, float, np.ndarray]:
     """Return ``(base_val, full_val, b_list)`` for a single Richardson grid.
 
@@ -242,7 +305,9 @@ def _score_grid(
     """
     if b_list is None:
         s_list = [1.0 / q for q in q_grid]
-        b_list, _ = get_richardson_coefficients(s_list, p, m)
+        b_list, _ = _richardson_coefficients_for_grid(
+            s_list, p=p, m=m, well_conditioned=well_conditioned,
+        )
     b_tilde = b_suppressed_norm(b_list, q_grid, m, p)
     den_eps = richardson_stepcount_eps_denominator(m, p)
     K = richardson_b_over_eps_prefactor(p)
@@ -273,7 +338,9 @@ def compute_min_samples(
     ``m ∈ [1, m_max]`` and, for each ``m``, either:
 
       * the well-conditioned grid ``q_k`` from ``get_sample_points`` (when
-        ``well_conditioned_formula=True``; ``m = 1`` uses ``q = [1]``), or
+        ``well_conditioned_formula=True``; requires even ``p``; uses the
+        prescriptive even-power Vandermonde and closed-form ``b``; ``m = 1``
+        uses ``q = [1]``), or
       * every ``m``-subset of ``{q_min, …, q_max}`` for ``m ≥ 2`` (``itertools.combinations``),
         optionally permuted when ``brute_permutations`` is set and the
         permutation count is within ``brute_permutations_max_count``; for ``m = 1``
@@ -285,6 +352,12 @@ def compute_min_samples(
 
     Returns parallel lists ``(m_per_ε, base_per_ε, q_grid_per_ε)``.
     """
+    if well_conditioned_formula and not wc_extrapolation_valid_for_p(p):
+        raise ValueError(
+            f"Well-conditioned extrapolation requires an even error series "
+            f"(even p); got p={p}. Use optimized search instead."
+        )
+
     sq_cap = float(brute_force_b_norm1_sq_max) if brute_force_b_norm1_sq_max is not None \
         else BRUTE_FORCE_B_NORM1_SQ_MAX_DEFAULT
     q_hi = int(q_max) if q_max is not None else int(m_max)
@@ -304,7 +377,10 @@ def compute_min_samples(
         for m in range(1, m_max + 1):
             if well_conditioned_formula:
                 _, q_grid = get_sample_points(m)
-                base, full, _ = _score_grid(p=p, m=m, q_grid=q_grid, error=error, A=A, n=n)
+                base, full, _ = _score_grid(
+                    p=p, m=m, q_grid=q_grid, error=error, A=A, n=n,
+                    well_conditioned=True,
+                )
                 if full < best_full:
                     best_full = full
                     best = (m, base, list(q_grid))
