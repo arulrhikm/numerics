@@ -30,7 +30,9 @@ RICHARDSON_K_BY_P: dict[int, float] = {
 }
 RICHARDSON_K_DEFAULT: float = (4.0 / 3.0) * (math.e - 1.0)
 
-# Brute-force search rejects grids whose ‖b‖₁² exceeds this default cap.
+# Brute-force search rejects grids whose ‖b‖₁² exceeds this default cap when
+# ``compute_min_samples(..., brute_force_b_norm1_sq_max=None)``. Plot scripts
+# pass an explicit cap via ``--brute-bnorm-sq-max`` instead.
 BRUTE_FORCE_B_NORM1_SQ_MAX_DEFAULT: float = 1e6
 
 # Pre-tabulated Lemma 57 geometric ratios for the orders we evaluate often.

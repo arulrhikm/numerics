@@ -47,6 +47,79 @@ def _steps_for_error(
     return rt.compute_steps_gate_depth(error, m, m_expr, p, A=A, n=n_sys)
 
 
+def _run_one_schedule(
+    *,
+    errors: np.ndarray,
+    p: int,
+    q_max: int,
+    q_min: int,
+    b2_cap: float,
+    brute_permutations: bool,
+    brute_permutations_max_count: int,
+    step_mode: StepMode,
+    n_sys: int,
+    A: float,
+    mode_name: str,
+    mode_flags: dict,
+) -> dict:
+    """Run a single WC or optimized search and return step/norm diagnostics."""
+    if mode_name == "wc":
+        print(f"  p={p}, mode=wc ({step_mode}) ...")
+    else:
+        print(f"  p={p}, mode={mode_name} ({step_mode}), ||b||_1^2 cap={b2_cap:g} ...")
+    best_m, best_base, best_q = rt.compute_min_samples(
+        errors,
+        p=p,
+        m_max=q_max,
+        q_min=q_min,
+        q_max=q_max,
+        brute_permutations=brute_permutations,
+        brute_permutations_max_count=brute_permutations_max_count,
+        brute_force_b_norm1_sq_max=b2_cap,
+        A=A,
+        **mode_flags,
+    )
+
+    trotter_steps: list[float] = []
+    richardson_steps: list[float] = []
+    bnorm1: list[float] = []
+    btilde1: list[float] = []
+    b_coeffs: list[list[float]] = []
+    q_grids: list[list[int]] = []
+    use_wc = mode_name == "wc"
+    for eps, m, m_expr, q_grid in zip(errors, best_m, best_base, best_q):
+        t, r = _steps_for_error(
+            step_mode=step_mode, error=eps, m=m, m_expr=m_expr, p=p,
+            A=A, n_sys=n_sys,
+        )
+        trotter_steps.append(t)
+        richardson_steps.append(r)
+        s_list = [1.0 / q for q in q_grid]
+        b, _ = (
+            rt.get_wc_richardson_coefficients(s_list, m)
+            if use_wc
+            else rt.get_richardson_coefficients(s_list, p, m)
+        )
+        bnorm1.append(rt.b_norm1(b))
+        btilde1.append(rt.b_suppressed_norm(b, q_grid, m, p))
+        b_coeffs.append([float(x) for x in b])
+        q_grids.append([int(q) for q in q_grid])
+
+    bnorm1_arr = np.array(bnorm1, dtype=float)
+    return dict(
+        trotter=np.array(trotter_steps, dtype=float),
+        richardson=np.array(richardson_steps, dtype=float),
+        sample_overhead=bnorm1_arr**2,
+        m_expr=np.array(best_base, dtype=float),
+        m_per_error=np.array(best_m, dtype=int),
+        bnorm1=bnorm1_arr,
+        btilde1=np.array(btilde1, dtype=float),
+        b_coeffs=b_coeffs,
+        q_grids=q_grids,
+        b2_cap=float(b2_cap),
+    )
+
+
 def compute_results(
     *,
     errors: np.ndarray,
@@ -73,58 +146,119 @@ def compute_results(
             if mode_name == "wc" and not rt.wc_extrapolation_valid_for_p(p):
                 print(f"  p={p}, mode={mode_name}: skipped (WC requires even p)")
                 continue
-            print(f"  p={p}, mode={mode_name} ({step_mode}) ...")
-            best_m, best_base, best_q = rt.compute_min_samples(
-                errors,
+            results_by_order[p][mode_name] = _run_one_schedule(
+                errors=errors,
                 p=p,
-                m_max=q_max,
-                q_min=q_min,
                 q_max=q_max,
+                q_min=q_min,
+                b2_cap=b2_cap,
                 brute_permutations=brute_permutations,
                 brute_permutations_max_count=brute_permutations_max_count,
-                brute_force_b_norm1_sq_max=b2_cap,
+                step_mode=step_mode,
+                n_sys=n_sys,
                 A=A,
-                **mode_flags,
-            )
-
-            trotter_steps: list[float] = []
-            richardson_steps: list[float] = []
-            bnorm1: list[float] = []
-            btilde1: list[float] = []
-            b_coeffs: list[list[float]] = []
-            q_grids: list[list[int]] = []
-            use_wc = mode_name == "wc"
-            for eps, m, m_expr, q_grid in zip(errors, best_m, best_base, best_q):
-                t, r = _steps_for_error(
-                    step_mode=step_mode, error=eps, m=m, m_expr=m_expr, p=p,
-                    A=A, n_sys=n_sys,
-                )
-                trotter_steps.append(t)
-                richardson_steps.append(r)
-                s_list = [1.0 / q for q in q_grid]
-                b, _ = (
-                    rt.get_wc_richardson_coefficients(s_list, m)
-                    if use_wc
-                    else rt.get_richardson_coefficients(s_list, p, m)
-                )
-                bnorm1.append(rt.b_norm1(b))
-                btilde1.append(rt.b_suppressed_norm(b, q_grid, m, p))
-                b_coeffs.append([float(x) for x in b])
-                q_grids.append([int(q) for q in q_grid])
-
-            bnorm1_arr = np.array(bnorm1, dtype=float)
-            results_by_order[p][mode_name] = dict(
-                trotter=np.array(trotter_steps, dtype=float),
-                richardson=np.array(richardson_steps, dtype=float),
-                sample_overhead=bnorm1_arr**2,
-                m_expr=np.array(best_base, dtype=float),
-                m_per_error=np.array(best_m, dtype=int),
-                bnorm1=bnorm1_arr,
-                btilde1=np.array(btilde1, dtype=float),
-                b_coeffs=b_coeffs,
-                q_grids=q_grids,
+                mode_name=mode_name,
+                mode_flags=mode_flags,
             )
     return results_by_order
+
+
+def compute_multi_cap_results(
+    *,
+    errors: np.ndarray,
+    orders: list[int],
+    q_max: int,
+    q_min: int,
+    b2_caps: list[float],
+    brute_permutations: bool,
+    brute_permutations_max_count: int,
+    step_mode: StepMode,
+    n_sys: int,
+    A: float = 1.0,
+) -> dict:
+    """Return ``{p: {"wc": ..., "opt_by_cap": {cap: ...}}}`` for cap sweeps."""
+    results_by_order: dict = {}
+    wc_flags = dict(well_conditioned_formula=True)
+    opt_flags = dict(well_conditioned_formula=False)
+
+    for p in orders:
+        results_by_order[p] = {"opt_by_cap": {}}
+        if rt.wc_extrapolation_valid_for_p(p):
+            results_by_order[p]["wc"] = _run_one_schedule(
+                errors=errors,
+                p=p,
+                q_max=q_max,
+                q_min=q_min,
+                b2_cap=b2_caps[0],
+                brute_permutations=brute_permutations,
+                brute_permutations_max_count=brute_permutations_max_count,
+                step_mode=step_mode,
+                n_sys=n_sys,
+                A=A,
+                mode_name="wc",
+                mode_flags=wc_flags,
+            )
+        else:
+            print(f"  p={p}, mode=wc: skipped (WC requires even p)")
+
+        for cap in b2_caps:
+            cap_key = float(cap)
+            results_by_order[p]["opt_by_cap"][cap_key] = _run_one_schedule(
+                errors=errors,
+                p=p,
+                q_max=q_max,
+                q_min=q_min,
+                b2_cap=cap_key,
+                brute_permutations=brute_permutations,
+                brute_permutations_max_count=brute_permutations_max_count,
+                step_mode=step_mode,
+                n_sys=n_sys,
+                A=A,
+                mode_name=f"opt(cap={cap_key:g})",
+                mode_flags=opt_flags,
+            )
+    return results_by_order
+
+
+def _sidecar_mode_sections(
+    *,
+    p: int,
+    mode: str,
+    r: dict,
+    errors: np.ndarray,
+    b2_cap_label: str | None = None,
+) -> tuple[list[str], dict]:
+    cap_note = f", cap={b2_cap_label}" if b2_cap_label else ""
+    label = MODE_LABEL.get(mode, mode)
+    if mode == "opt" and b2_cap_label:
+        label = f"{label} (‖b‖₁² search cap = {b2_cap_label})"
+    out = [
+        f"### p = {p}, {label} (`mode = {mode}{cap_note}`)",
+        "",
+        "| ε | m | q_k | ‖b‖₁ | ‖b‖₁² | ‖b̃‖₁ |",
+        "| --- | --- | --- | --- | --- | --- |",
+    ]
+    for i, eps in enumerate(errors):
+        q_str = "[" + ", ".join(str(q) for q in r["q_grids"][i]) + "]"
+        out.append(
+            f"| {eps:.3e} | {int(r['m_per_error'][i])} | {q_str} | "
+            f"{r['bnorm1'][i]:.4g} | {r['sample_overhead'][i]:.4g} | "
+            f"{r['btilde1'][i]:.4g} |"
+        )
+    out.append("")
+    json_block = {
+        "m": [int(x) for x in r["m_per_error"]],
+        "q_grids": r["q_grids"],
+        "b_coeffs": r["b_coeffs"],
+        "bnorm1": [float(x) for x in r["bnorm1"]],
+        "bnorm1_sq": [float(x) for x in r["sample_overhead"]],
+        "btilde1": [float(x) for x in r["btilde1"]],
+        "trotter_steps": [float(x) for x in r["trotter"]],
+        "richardson_steps": [float(x) for x in r["richardson"]],
+    }
+    if b2_cap_label is not None:
+        json_block["b2_search_cap"] = float(b2_cap_label)
+    return out, json_block
 
 
 def write_params_sidecar(
@@ -189,31 +323,30 @@ def write_params_sidecar(
             if mode not in results_by_order[p]:
                 continue
             r = results_by_order[p][mode]
-            out += [
-                f"### p = {p}, {MODE_LABEL[mode]} (`mode = {mode}`)",
-                "",
-                "| ε | m | q_k | ‖b‖₁ | ‖b‖₁² | ‖b̃‖₁ |",
-                "| --- | --- | --- | --- | --- | --- |",
-            ]
-            for i, eps in enumerate(errors):
-                q_str = "[" + ", ".join(str(q) for q in r["q_grids"][i]) + "]"
-                out.append(
-                    f"| {eps:.3e} | {int(r['m_per_error'][i])} | {q_str} | "
-                    f"{r['bnorm1'][i]:.4g} | {r['sample_overhead'][i]:.4g} | "
-                    f"{r['btilde1'][i]:.4g} |"
-                )
-            out.append("")
+            cap_label = None
+            if mode == "opt" and "b2_cap" in r:
+                cap_label = f"{r['b2_cap']:g}"
+            section, block = _sidecar_mode_sections(
+                p=p, mode=mode, r=r, errors=errors, b2_cap_label=cap_label,
+            )
+            out.extend(section)
+            json_data["results"][str(p)][mode] = block
 
-            json_data["results"][str(p)][mode] = {
-                "m": [int(x) for x in r["m_per_error"]],
-                "q_grids": r["q_grids"],
-                "b_coeffs": r["b_coeffs"],
-                "bnorm1": [float(x) for x in r["bnorm1"]],
-                "bnorm1_sq": [float(x) for x in r["sample_overhead"]],
-                "btilde1": [float(x) for x in r["btilde1"]],
-                "trotter_steps": [float(x) for x in r["trotter"]],
-                "richardson_steps": [float(x) for x in r["richardson"]],
-            }
+        opt_by_cap = results_by_order[p].get("opt_by_cap")
+        if opt_by_cap:
+            json_data["results"][str(p)]["opt_by_cap"] = {}
+            for cap in sorted(opt_by_cap):
+                r = opt_by_cap[cap]
+                cap_label = f"{cap:g}"
+                section, block = _sidecar_mode_sections(
+                    p=p,
+                    mode=f"opt_cap_{cap_label}",
+                    r=r,
+                    errors=errors,
+                    b2_cap_label=cap_label,
+                )
+                out.extend(section)
+                json_data["results"][str(p)]["opt_by_cap"][cap_label] = block
 
     out += [
         f"Full Richardson coefficients `b_k` and per-curve step counts are in "

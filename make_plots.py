@@ -4,6 +4,7 @@ Usage::
 
     python make_plots.py            # default settings
     python make_plots.py -- --eps-points 30   # forward extra flags to BOTH scripts
+    python make_plots.py --multi-cap-overhead   # also write overhead_multi_cap.png
 
 Extra arguments after ``--`` are forwarded to each underlying plotting script.
 """
@@ -29,10 +30,15 @@ def _extra_args(argv: list[str]) -> list[str]:
 
 
 def main() -> int:
-    extra = _extra_args(sys.argv[1:])
+    argv = [a for a in sys.argv[1:] if a != "--multi-cap-overhead"]
+    multi_cap = "--multi-cap-overhead" in sys.argv[1:]
+    extra = _extra_args(argv)
+
     for script in _SCRIPTS:
         print(f"\n=== Running {script.relative_to(_ROOT)} ===")
         cmd = [sys.executable, str(script), *extra]
+        if script.name == "plot_overhead.py" and multi_cap:
+            cmd.extend(["--brute-bnorm-sq-caps", "10,100,1000"])
         rc = subprocess.call(cmd, cwd=_ROOT)
         if rc != 0:
             return rc

@@ -43,3 +43,18 @@ def parse_orders(orders_arg: str) -> list[int]:
     if not orders:
         raise SystemExit("--orders must list at least one integer p.")
     return orders
+
+
+def parse_brute_bnorm_sq_caps(caps_arg: str) -> list[float]:
+    """Parse ``"10,100,1000"`` -> ``[10.0, 100.0, 1000.0]`` (rejects empty)."""
+    caps = [float(x.strip()) for x in caps_arg.split(",") if x.strip()]
+    if not caps:
+        raise SystemExit("--brute-bnorm-sq-caps must list at least one cap.")
+    return caps
+
+
+def format_b2_cap(cap: float) -> str:
+    """Human-readable cap for titles, legends, and sidecars."""
+    if abs(cap - round(cap)) < 1e-9:
+        return str(int(round(cap)))
+    return f"{cap:g}"

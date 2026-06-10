@@ -30,6 +30,8 @@ import richardson as rt
 from plotting.common_cli import (
     add_shared_grid_args,
     add_shared_search_args,
+    format_b2_cap,
+    parse_brute_bnorm_sq_caps,
     parse_orders,
     resolve_output_dir,
 )
@@ -88,6 +90,21 @@ def parse_args():
         "--no-cropped",
         action="store_true",
         help="Skip the caption-friendly (no-title) companion file.",
+    )
+    parser.add_argument(
+        "--brute-bnorm-sq-caps",
+        type=str,
+        default="",
+        help=(
+            "If set (e.g. 10,100,1000), also write a multi-cap overhead figure "
+            "with one optimized curve per cap plus WC."
+        ),
+    )
+    parser.add_argument(
+        "--multi-cap-output",
+        type=str,
+        default="overhead_multi_cap.png",
+        help="Output filename for the multi-cap comparison figure.",
     )
     return parser.parse_args()
 
@@ -192,6 +209,147 @@ def _build_figure(
     return fig
 
 
+def _cap_series_colors(caps: list[float]) -> dict[float, tuple]:
+    cmap = plt.get_cmap("rainbow")
+    n = len(caps)
+    return {
+        float(cap): cmap(i / max(n - 1, 1))
+        for i, cap in enumerate(caps)
+    }
+
+
+def _build_multi_cap_figure(
+    *,
+    orders: list[int],
+    errors: np.ndarray,
+    results_by_order: dict,
+    b2_caps: list[float],
+    args: argparse.Namespace,
+    omit_p1: float,
+    omit_titles: bool,
+) -> plt.Figure:
+    norm = mcolors.LogNorm(vmin=CBAR_VMIN_FLOOR, vmax=CBAR_VMAX, clip=False)
+    cmap = plt.get_cmap(args.cmap)
+    cap_colors = _cap_series_colors(b2_caps)
+
+    n_p = len(orders)
+    fig_w = max(6.5 * n_p, 6.5)
+    fig_h = 5.5 if omit_titles else 6.5
+    fig, axes = plt.subplots(1, n_p, figsize=(fig_w, fig_h), constrained_layout=True)
+    fig.set_constrained_layout_pads(h_pad=0.06, w_pad=0.04, hspace=0.02, wspace=0.02)
+    if n_p == 1:
+        axes = np.array([axes])
+
+    last_mappable = None
+    caps_label = ", ".join(format_b2_cap(c) for c in b2_caps)
+    for idx, p in enumerate(orders):
+        ax = axes[idx]
+        r_p = results_by_order[p]
+        trotter_baseline = r_p.get("wc", next(iter(r_p["opt_by_cap"].values())))["trotter"]
+        ax.plot(
+            errors,
+            trotter_baseline,
+            "-",
+            color="gray",
+            linewidth=2,
+            alpha=0.35,
+            zorder=1,
+        )
+
+        if "wc" in r_p:
+            steps = np.asarray(r_p["wc"]["richardson"], dtype=float)
+            so = np.asarray(r_p["wc"]["sample_overhead"], dtype=float)
+            visible = cm.visible_mask_for_sample_overhead(
+                order=int(p), sample_overhead=so, omit_p1_sample_overhead_above=omit_p1
+            )
+            last_mappable = ax.scatter(
+                errors[visible],
+                steps[visible],
+                c=so[visible],
+                cmap=cmap,
+                norm=norm,
+                s=70,
+                marker="s",
+                linewidths=0,
+                edgecolors="none",
+                zorder=3,
+            )
+
+        for cap in b2_caps:
+            cap_key = float(cap)
+            r_cap = r_p["opt_by_cap"][cap_key]
+            steps = np.asarray(r_cap["richardson"], dtype=float)
+            so = np.asarray(r_cap["sample_overhead"], dtype=float)
+            visible = cm.visible_mask_for_sample_overhead(
+                order=int(p), sample_overhead=so, omit_p1_sample_overhead_above=omit_p1
+            )
+            edge = cap_colors[cap_key]
+            sc = ax.scatter(
+                errors[visible],
+                steps[visible],
+                c=so[visible],
+                cmap=cmap,
+                norm=norm,
+                s=70,
+                marker="o",
+                linewidths=1.2,
+                edgecolors=[edge],
+                zorder=4,
+            )
+            last_mappable = sc
+
+        if not omit_titles:
+            c_pref = rt.richardson_b_over_eps_prefactor(p)
+            title = (
+                rf"Order $p = {p}$ (opt caps: {caps_label})"
+                f"\nstatic prefactor ($c = {c_pref:.3f}$)"
+            )
+            if args.brute_permutations:
+                title = f"{title}, permuted $q$"
+            _style_ax(ax, title=title)
+        else:
+            _style_ax(ax)
+        ylim = OVERHEAD_YLIM_BY_P.get(int(p))
+        if ylim is not None:
+            ax.set_ylim(*ylim)
+
+        legend_handles = [
+            Line2D([0], [0], color="gray", linewidth=LEGEND_LINEWIDTH, alpha=0.45, label="Trotter"),
+            Line2D([0], [0], marker="s", linestyle="None", markersize=LEGEND_MARKERSIZE * 0.7,
+                   markerfacecolor="#888", markeredgecolor="none", label="Richardson (well-cond.)"),
+        ]
+        for cap in b2_caps:
+            edge = cap_colors[float(cap)]
+            legend_handles.append(
+                Line2D(
+                    [0], [0], marker="o", linestyle="None",
+                    markersize=LEGEND_MARKERSIZE * 0.7,
+                    markerfacecolor="#ddd", markeredgecolor=edge, markeredgewidth=1.5,
+                    label=rf"Optimized ($\|\mathbf{{b}}\|_1^2 \leq {format_b2_cap(cap)}$)",
+                )
+            )
+        ax.legend(
+            handles=legend_handles,
+            fontsize=FS_LEGEND,
+            loc="upper left",
+            framealpha=0.9,
+            handlelength=LEGEND_HANDLELEN,
+            handletextpad=0.65,
+            borderpad=0.45,
+            labelspacing=0.55,
+        )
+
+    if not omit_titles:
+        fig.suptitle("Overhead (multi-cap optimized search)", fontsize=FS_SUPTITLE, fontweight="600", y=1.03)
+
+    cbar = fig.colorbar(
+        last_mappable, ax=axes, orientation="vertical", fraction=0.02, pad=0.02, aspect=30
+    )
+    cbar.set_label(r"$\|\mathbf{b}\|_1^2$  (Richardson coefficients)", fontsize=FS_CBAR)
+    cbar.ax.tick_params(labelsize=FS_AXIS - 2)
+    return fig
+
+
 def main() -> None:
     args = parse_args()
     rt.set_lambda_scale_mode(args.lambda_mode)
@@ -261,6 +419,71 @@ def main() -> None:
     )
     print(f"  Saved {md_path}")
     print(f"  Saved {json_path}")
+
+    if args.brute_bnorm_sq_caps.strip():
+        b2_caps = parse_brute_bnorm_sq_caps(args.brute_bnorm_sq_caps)
+        caps_label = ", ".join(format_b2_cap(c) for c in b2_caps)
+        print(f"\nMulti-cap overhead: optimized caps = [{caps_label}]")
+        multi_results = cm.compute_multi_cap_results(
+            errors=errors,
+            orders=orders,
+            q_max=int(args.q_max),
+            q_min=int(args.q_min),
+            b2_caps=b2_caps,
+            brute_permutations=bool(args.brute_permutations),
+            brute_permutations_max_count=int(args.brute_permutations_max_count),
+            step_mode="plane_wave",
+            n_sys=1,
+        )
+
+        def save_multi(omit_titles: bool, name: str) -> None:
+            fig = _build_multi_cap_figure(
+                orders=orders,
+                errors=errors,
+                results_by_order=multi_results,
+                b2_caps=b2_caps,
+                args=args,
+                omit_p1=omit_p1,
+                omit_titles=omit_titles,
+            )
+            path = output_dir / name
+            fig.savefig(path, bbox_inches="tight")
+            plt.close(fig)
+            print(f"  Saved {path}")
+
+        multi_stem = Path(args.multi_cap_output)
+        save_multi(omit_titles=False, name=args.multi_cap_output)
+        if not args.no_cropped:
+            save_multi(
+                omit_titles=True,
+                name=f"{multi_stem.stem}_cropped{multi_stem.suffix}",
+            )
+
+        md_path, json_path = cm.write_params_sidecar(
+            output_dir=output_dir,
+            stem=multi_stem.stem,
+            title="Overhead multi-cap figure parameters",
+            settings={
+                "script": "plotting/plot_overhead.py",
+                "step_mode": "plane_wave",
+                "λ-mode": args.lambda_mode,
+                "orders (p)": ", ".join(str(p) for p in orders),
+                "ε grid": (
+                    f"{args.eps_points} points, log10 in "
+                    f"[{args.eps_log_min:.6g}, {args.eps_log_max:.6g}]"
+                ),
+                "q_min, q_max": f"{args.q_min}, {args.q_max}",
+                "‖b‖₁² search caps (optimized)": caps_label,
+                "brute permutations": str(bool(args.brute_permutations)),
+                "drop p=1 points with ‖b‖₁² >": f"{omit_p1:g}",
+                "system size n (λ-comm)": "1 (overhead omits the explicit n prefactor)",
+            },
+            errors=errors,
+            orders=orders,
+            results_by_order=multi_results,
+        )
+        print(f"  Saved {md_path}")
+        print(f"  Saved {json_path}")
 
 
 if __name__ == "__main__":
