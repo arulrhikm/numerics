@@ -4,11 +4,10 @@ Each panel shows, for a given Trotter order ``p``:
 
 * the standard Trotter baseline (gray solid line);
 * Richardson step counts under the well-conditioned grid (square markers);
-* Richardson step counts under the brute-force optimized grid (circle markers).
+* Richardson step counts under the brute-force optimized grid (triangle markers).
 
-Marker color encodes the sample overhead ``‖b‖₁²``. Writes a titled PNG plus a
-caption-friendly ``_cropped`` companion, and a Markdown + JSON sidecar with the
-exact settings and per-(p, mode, ε) grids.
+Marker color encodes the sample overhead ``‖b‖₁²``. Writes a titled PNG plus PDF,
+and a caption-friendly ``_cropped`` companion, plus a Markdown + JSON sidecar.
 """
 
 from __future__ import annotations
@@ -145,7 +144,7 @@ def _build_figure(
             zorder=1,
         )
 
-        for mode, marker in (("wc", "s"), ("opt", "o")):
+        for mode, marker in (("wc", "s"), ("opt", "^")):
             if mode not in r_p:
                 continue
             steps = np.asarray(r_p[mode]["richardson"], dtype=float)
@@ -184,7 +183,7 @@ def _build_figure(
             Line2D([0], [0], color="gray", linewidth=LEGEND_LINEWIDTH, alpha=0.45, label="Trotter"),
             Line2D([0], [0], marker="s", linestyle="None", markersize=LEGEND_MARKERSIZE * 0.7,
                    markerfacecolor="#888", markeredgecolor="none", label="Richardson (well-cond.)"),
-            Line2D([0], [0], marker="o", linestyle="None", markersize=LEGEND_MARKERSIZE * 0.7,
+            Line2D([0], [0], marker="^", linestyle="None", markersize=LEGEND_MARKERSIZE * 0.7,
                    markerfacecolor="#444", markeredgecolor="none", label="Richardson (optimized)"),
         ]
         ax.legend(
@@ -209,15 +208,6 @@ def _build_figure(
     return fig
 
 
-def _cap_series_colors(caps: list[float]) -> dict[float, tuple]:
-    cmap = plt.get_cmap("rainbow")
-    n = len(caps)
-    return {
-        float(cap): cmap(i / max(n - 1, 1))
-        for i, cap in enumerate(caps)
-    }
-
-
 def _build_multi_cap_figure(
     *,
     orders: list[int],
@@ -230,7 +220,6 @@ def _build_multi_cap_figure(
 ) -> plt.Figure:
     norm = mcolors.LogNorm(vmin=CBAR_VMIN_FLOOR, vmax=CBAR_VMAX, clip=False)
     cmap = plt.get_cmap(args.cmap)
-    cap_colors = _cap_series_colors(b2_caps)
 
     n_p = len(orders)
     fig_w = max(6.5 * n_p, 6.5)
@@ -283,7 +272,6 @@ def _build_multi_cap_figure(
             visible = cm.visible_mask_for_sample_overhead(
                 order=int(p), sample_overhead=so, omit_p1_sample_overhead_above=omit_p1
             )
-            edge = cap_colors[cap_key]
             sc = ax.scatter(
                 errors[visible],
                 steps[visible],
@@ -291,9 +279,9 @@ def _build_multi_cap_figure(
                 cmap=cmap,
                 norm=norm,
                 s=70,
-                marker="o",
-                linewidths=1.2,
-                edgecolors=[edge],
+                marker="^",
+                linewidths=0,
+                edgecolors="none",
                 zorder=4,
             )
             last_mappable = sc
@@ -319,12 +307,11 @@ def _build_multi_cap_figure(
                    markerfacecolor="#888", markeredgecolor="none", label="Richardson (well-cond.)"),
         ]
         for cap in b2_caps:
-            edge = cap_colors[float(cap)]
             legend_handles.append(
                 Line2D(
-                    [0], [0], marker="o", linestyle="None",
+                    [0], [0], marker="^", linestyle="None",
                     markersize=LEGEND_MARKERSIZE * 0.7,
-                    markerfacecolor="#ddd", markeredgecolor=edge, markeredgewidth=1.5,
+                    markerfacecolor="#444", markeredgecolor="none",
                     label=rf"Optimized ($\|\mathbf{{b}}\|_1^2 \leq {format_b2_cap(cap)}$)",
                 )
             )
@@ -384,10 +371,9 @@ def main() -> None:
             orders=orders, errors=errors, results_by_order=results_by_order,
             args=args, b2_cap=b2_cap, omit_p1=omit_p1, omit_titles=omit_titles,
         )
-        path = output_dir / name
-        fig.savefig(path, bbox_inches="tight")
+        for path in cm.save_figure(fig, output_dir / name):
+            print(f"  Saved {path}")
         plt.close(fig)
-        print(f"  Saved {path}")
 
     stem = Path(args.output)
     save(omit_titles=False, name=args.output)
@@ -446,10 +432,9 @@ def main() -> None:
                 omit_p1=omit_p1,
                 omit_titles=omit_titles,
             )
-            path = output_dir / name
-            fig.savefig(path, bbox_inches="tight")
+            for path in cm.save_figure(fig, output_dir / name):
+                print(f"  Saved {path}")
             plt.close(fig)
-            print(f"  Saved {path}")
 
         multi_stem = Path(args.multi_cap_output)
         save_multi(omit_titles=False, name=args.multi_cap_output)

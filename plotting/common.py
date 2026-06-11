@@ -24,6 +24,18 @@ MODE_LABEL = {
 StepMode = Literal["plane_wave", "gate_depth"]
 
 
+def save_figure(fig, path: Path | str) -> list[Path]:
+    """Save a figure to ``path`` and also write a companion ``.pdf``."""
+    out = Path(path)
+    fig.savefig(out, bbox_inches="tight")
+    saved = [out]
+    pdf_path = out.with_suffix(".pdf")
+    if pdf_path != out:
+        fig.savefig(pdf_path, bbox_inches="tight")
+        saved.append(pdf_path)
+    return saved
+
+
 def visible_mask_for_sample_overhead(
     *,
     order: int,

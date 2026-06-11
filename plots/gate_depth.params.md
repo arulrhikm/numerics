@@ -25,7 +25,7 @@ Companion data for `plots/gate_depth.png` (and `plots/gate_depth_cropped.png`).
 
 For each Trotter order `p`, the search returned the schedule below (Richardson depth `m`, integer refinement grid `q_k`, and the coefficient norms `‖b‖₁`, `‖b‖₁²`, and the suppressed norm `‖b̃‖₁` that enters the step bound).
 
-### p = 1, brute-force optimized grid (`mode = opt`)
+### p = 1, brute-force optimized grid (‖b‖₁² search cap = 100) (`mode = opt, cap=100`)
 
 | ε | m | q_k | ‖b‖₁ | ‖b‖₁² | ‖b̃‖₁ |
 | --- | --- | --- | --- | --- | --- |
@@ -135,7 +135,7 @@ For each Trotter order `p`, the search returned the schedule below (Richardson d
 | 1.323e-06 | 8 | [147, 50, 30, 22, 17, 15, 13, 11] | 1.85 | 3.423 | 4.176e-21 |
 | 1.000e-06 | 8 | [147, 50, 30, 22, 17, 15, 13, 11] | 1.85 | 3.423 | 4.176e-21 |
 
-### p = 2, brute-force optimized grid (`mode = opt`)
+### p = 2, brute-force optimized grid (‖b‖₁² search cap = 100) (`mode = opt, cap=100`)
 
 | ε | m | q_k | ‖b‖₁ | ‖b‖₁² | ‖b̃‖₁ |
 | --- | --- | --- | --- | --- | --- |
@@ -245,7 +245,7 @@ For each Trotter order `p`, the search returned the schedule below (Richardson d
 | 1.323e-06 | 5 | [58, 20, 12, 9, 7] | 1.643 | 2.701 | 1.998e-13 |
 | 1.000e-06 | 5 | [58, 20, 12, 9, 7] | 1.643 | 2.701 | 1.998e-13 |
 
-### p = 4, brute-force optimized grid (`mode = opt`)
+### p = 4, brute-force optimized grid (‖b‖₁² search cap = 100) (`mode = opt, cap=100`)
 
 | ε | m | q_k | ‖b‖₁ | ‖b‖₁² | ‖b̃‖₁ |
 | --- | --- | --- | --- | --- | --- |

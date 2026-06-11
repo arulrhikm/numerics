@@ -230,10 +230,9 @@ def main() -> None:
             orders=orders, errors=errors, results_by_order=results_by_order,
             b2_lab=b2_lab, omit_titles=omit_titles,
         )
-        path = output_dir / name
-        fig.savefig(path, bbox_inches="tight")
+        for path in cm.save_figure(fig, output_dir / name):
+            print(f"  Saved {path}")
         plt.close(fig)
-        print(f"  Saved {path}")
 
     stem = Path(args.output)
     save(omit_titles=False, name=args.output)
