@@ -119,10 +119,9 @@ def _build_figure(
         ro = r_p["opt"]["richardson"]
         rw = r_p["wc"]["richardson"] if "wc" in r_p else ro
         rich_best = np.minimum(rw, ro) if "wc" in r_p else ro
-        c_int = int(rt.gate_overhead(p))
         ax_left.plot(
             errors, trot, "-", color=col, linewidth=PLOT_LW,
-            label=rf"Trotter $p={p}$, $C={c_int}$",
+            label=rf"Trotter $p={p}$",
         )
         ax_left.plot(
             errors, rich_best, "--", color=col, linewidth=PLOT_LW,
@@ -132,10 +131,9 @@ def _build_figure(
     p6 = TROTTER_EXTRA_ORDER
     col6 = ORDER_COLORS[p6]
     trot6 = _analytic_trotter_gate_depth(errors, p6)
-    c6 = int(rt.gate_overhead(p6))
     ax_left.plot(
         errors, trot6, "-", color=col6, linewidth=PLOT_LW,
-        label=rf"Trotter $p={p6}$, $C={c6}$",
+        label=rf"Trotter $p={p6}$",
     )
 
     left_title = None if omit_titles else rf"Per order ($\|\mathbf{{b}}\|_1^2 \leq {b2_lab}$)"
@@ -172,7 +170,7 @@ def _build_figure(
 
     ax_right.plot(
         errors, trotter_best, "k-", linewidth=PLOT_LW + 0.35, zorder=4,
-        label=rf"Best Trotter $\{{{best_trot_p_tex}\}}$",
+        label=rf"Best Trotter $\{{p={best_trot_p_tex}\}}$",
     )
     ax_right.plot(
         errors, rich_best_env, "k--",

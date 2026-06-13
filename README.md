@@ -84,7 +84,7 @@ triples are identical across the two figures; only the y-axis differs.
 | ε grid upper edge (log10)                        | `log10(0.9) ≈ -0.0458`               | `--eps-log-max`                   |
 | Number of ε samples                              | `50`                                 | `--eps-points`                    |
 | `q_min, q_max`                                   | `1, 10`                              | `--q-min`, `--q-max`              |
-| `‖b‖₁²` brute-force cap (reject above)           | `100`                                | `--brute-bnorm-sq-max`            |
+| `‖b‖₁²` brute-force cap (reject above)           | `10`                                 | `--brute-bnorm-sq-max`            |
 | System size `n` (gate-depth only)                | `299`                                | `--n-sys`                         |
 | Hide `p = 1` Richardson points with `‖b‖₁² >` …  | `1000`                               | `--omit-p1-sample-overhead-above` |
 
@@ -99,6 +99,6 @@ vanilla Trotter `p = 6` line is overlaid (`C₆ = 2 · 5² = 50`, slope `ε^(-1/
 no Richardson `p = 6` curve is computed.
 
 The right-panel "Best Trotter" envelope is the pointwise minimum over
-`p ∈ {1, 2, 4, 6}` (it includes the analytic `p = 6` line). "Best Richardson"
+`p ∈ {1, 2, 4, 6}` (it includes the analytic `p = 6` line). "Best extrapolated"
 is the pointwise minimum over `p ∈ {1, 2, 4}` and the two schedules. The faint
 colored traces repeat the per-order curves for reference.

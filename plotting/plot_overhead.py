@@ -36,10 +36,10 @@ from plotting.common_cli import (
 )
 from plotting import common as cm
 
-FS_AXIS = 17
-FS_LEGEND = 13
-FS_SUPTITLE = 19
-FS_CBAR = 17
+FS_AXIS = 21
+FS_LEGEND = 16
+FS_SUPTITLE = 23
+FS_CBAR = 21
 LEGEND_MARKERSIZE = 10
 LEGEND_LINEWIDTH = 2.25
 LEGEND_HANDLELEN = 2.75
