@@ -36,29 +36,53 @@ from plotting.common_cli import (
 )
 from plotting import common as cm
 
-FS_AXIS = 15
-FS_LEGEND = 12
-FS_SUPTITLE = 17
-FS_CBAR = 15
+FS_AXIS = 17
+FS_LEGEND = 13
+FS_SUPTITLE = 19
+FS_CBAR = 17
 LEGEND_MARKERSIZE = 10
 LEGEND_LINEWIDTH = 2.25
 LEGEND_HANDLELEN = 2.75
 CBAR_VMIN_FLOOR = 1.0
 CBAR_VMAX = 1000.0
+Y_LABEL = "Maximum # Trotter steps"
+LABEL_TROTTER = "Trotter"
+LABEL_WC = "LKW well conditioned"
+LABEL_OPT = "Brute force optimization"
+CBAR_LABEL = r"$\|\mathbf{b}\|_1^2$  (sample overhead factor)"
 # Per-order y-axis ranges on log scale.
 OVERHEAD_YLIM_BY_P = {1: (1.0, 1e6), 2: (1.0, 1e3), 4: (1.0, 5e1)}
 
 
-def _style_ax(ax, title=None, ylabel="Number of steps"):
+def _style_ax(ax, title=None, *, show_ylabel: bool = False):
     ax.set_xscale("log")
     ax.set_yscale("log")
     ax.set_xlabel(r"Precision  $\varepsilon$", fontsize=FS_AXIS)
-    ax.set_ylabel(ylabel, fontsize=FS_AXIS)
+    if show_ylabel:
+        ax.set_ylabel(Y_LABEL, fontsize=FS_AXIS)
     if title is not None:
         ax.set_title(title, fontsize=FS_AXIS, pad=8)
-    ax.tick_params(axis="both", labelsize=FS_AXIS - 2)
+    ax.tick_params(axis="both", labelsize=FS_AXIS - 1)
     ax.grid(True, which="major", ls="-", alpha=0.25)
     ax.grid(True, which="minor", ls=":", alpha=0.12)
+
+
+def _overhead_legend_handles() -> list[Line2D]:
+    handles = [
+        Line2D(
+            [0], [0], color="gray", linewidth=LEGEND_LINEWIDTH, alpha=0.45,
+            label=LABEL_TROTTER,
+        ),
+        Line2D(
+            [0], [0], marker="s", linestyle="None", markersize=LEGEND_MARKERSIZE * 0.7,
+            markerfacecolor="#888", markeredgecolor="none", label=LABEL_WC,
+        ),
+        Line2D(
+            [0], [0], marker="^", linestyle="None", markersize=LEGEND_MARKERSIZE * 0.7,
+            markerfacecolor="#444", markeredgecolor="none", label=LABEL_OPT,
+        ),
+    ]
+    return handles
 
 
 def _panel_title(p: int, b2_cap: float, c_pref: float, brute_permutations: bool) -> str:
@@ -172,22 +196,16 @@ def _build_figure(
             _style_ax(
                 ax,
                 title=_panel_title(int(p), b2_cap, float(c_pref), bool(args.brute_permutations)),
+                show_ylabel=(idx == 0),
             )
         else:
-            _style_ax(ax)
+            _style_ax(ax, show_ylabel=(idx == 0))
         ylim = OVERHEAD_YLIM_BY_P.get(int(p))
         if ylim is not None:
             ax.set_ylim(*ylim)
 
-        legend_handles = [
-            Line2D([0], [0], color="gray", linewidth=LEGEND_LINEWIDTH, alpha=0.45, label="Trotter"),
-            Line2D([0], [0], marker="s", linestyle="None", markersize=LEGEND_MARKERSIZE * 0.7,
-                   markerfacecolor="#888", markeredgecolor="none", label="Richardson (well-cond.)"),
-            Line2D([0], [0], marker="^", linestyle="None", markersize=LEGEND_MARKERSIZE * 0.7,
-                   markerfacecolor="#444", markeredgecolor="none", label="Richardson (optimized)"),
-        ]
         ax.legend(
-            handles=legend_handles,
+            handles=_overhead_legend_handles(),
             fontsize=FS_LEGEND,
             loc="upper left",
             framealpha=0.9,
@@ -203,8 +221,8 @@ def _build_figure(
     cbar = fig.colorbar(
         last_mappable, ax=axes, orientation="vertical", fraction=0.02, pad=0.02, aspect=30
     )
-    cbar.set_label(r"$\|\mathbf{b}\|_1^2$  (Richardson coefficients)", fontsize=FS_CBAR)
-    cbar.ax.tick_params(labelsize=FS_AXIS - 2)
+    cbar.set_label(CBAR_LABEL, fontsize=FS_CBAR)
+    cbar.ax.tick_params(labelsize=FS_AXIS - 1)
     return fig
 
 
@@ -294,29 +312,15 @@ def _build_multi_cap_figure(
             )
             if args.brute_permutations:
                 title = f"{title}, permuted $q$"
-            _style_ax(ax, title=title)
+            _style_ax(ax, title=title, show_ylabel=(idx == 0))
         else:
-            _style_ax(ax)
+            _style_ax(ax, show_ylabel=(idx == 0))
         ylim = OVERHEAD_YLIM_BY_P.get(int(p))
         if ylim is not None:
             ax.set_ylim(*ylim)
 
-        legend_handles = [
-            Line2D([0], [0], color="gray", linewidth=LEGEND_LINEWIDTH, alpha=0.45, label="Trotter"),
-            Line2D([0], [0], marker="s", linestyle="None", markersize=LEGEND_MARKERSIZE * 0.7,
-                   markerfacecolor="#888", markeredgecolor="none", label="Richardson (well-cond.)"),
-        ]
-        for cap in b2_caps:
-            legend_handles.append(
-                Line2D(
-                    [0], [0], marker="^", linestyle="None",
-                    markersize=LEGEND_MARKERSIZE * 0.7,
-                    markerfacecolor="#444", markeredgecolor="none",
-                    label=rf"Optimized ($\|\mathbf{{b}}\|_1^2 \leq {format_b2_cap(cap)}$)",
-                )
-            )
         ax.legend(
-            handles=legend_handles,
+            handles=_overhead_legend_handles(),
             fontsize=FS_LEGEND,
             loc="upper left",
             framealpha=0.9,
@@ -332,8 +336,8 @@ def _build_multi_cap_figure(
     cbar = fig.colorbar(
         last_mappable, ax=axes, orientation="vertical", fraction=0.02, pad=0.02, aspect=30
     )
-    cbar.set_label(r"$\|\mathbf{b}\|_1^2$  (Richardson coefficients)", fontsize=FS_CBAR)
-    cbar.ax.tick_params(labelsize=FS_AXIS - 2)
+    cbar.set_label(CBAR_LABEL, fontsize=FS_CBAR)
+    cbar.ax.tick_params(labelsize=FS_AXIS - 1)
     return fig
 
 

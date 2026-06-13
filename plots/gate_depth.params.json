@@ -13,7 +13,7 @@
   },
   "extras": {
     "Trotter p = 6 (analytic, no Richardson)": "closed form C_p^(1+1/p) \u00b7 \u03b5^(-1/p) \u00b7 (2/(1+p))^(1/p) with C_6 = 50",
-    "envelope (right panel)": "Best Trotter taken over p \u2208 {1, 2, 4, 6}; Best Richardson taken over p \u2208 {1, 2, 4} and both schedules."
+    "envelope (right panel)": "Best Trotter taken over p \u2208 {1, 2, 4, 6}; Best extrapolated taken over p \u2208 {1, 2, 4} and both schedules."
   },
   "epsilon": [
     0.9,

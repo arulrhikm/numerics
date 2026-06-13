@@ -19,7 +19,7 @@ Companion data for `plots/gate_depth.png` (and `plots/gate_depth_cropped.png`).
 ## Additional curves
 
 - **Trotter p = 6 (analytic, no Richardson)**: closed form C_p^(1+1/p) · ε^(-1/p) · (2/(1+p))^(1/p) with C_6 = 50
-- **envelope (right panel)**: Best Trotter taken over p ∈ {1, 2, 4, 6}; Best Richardson taken over p ∈ {1, 2, 4} and both schedules.
+- **envelope (right panel)**: Best Trotter taken over p ∈ {1, 2, 4, 6}; Best extrapolated taken over p ∈ {1, 2, 4} and both schedules.
 
 ## Optimal Richardson grids per (p, ε)
 

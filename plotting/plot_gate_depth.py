@@ -36,7 +36,7 @@ LEGEND_HANDLELEN = 2.75
 PLOT_LW = 2.25
 ORDER_COLORS = {1: "#2563eb", 2: "#16a34a", 4: "#9333ea", 6: "#ea580c"}
 TROTTER_EXTRA_ORDER = 6
-Y_LABEL = r"$c \times$ (number of steps)"
+Y_LABEL = "Gate depth"
 
 
 def _analytic_trotter_gate_depth(errors: np.ndarray, p: int) -> np.ndarray:
@@ -126,7 +126,7 @@ def _build_figure(
         )
         ax_left.plot(
             errors, rich_best, "--", color=col, linewidth=PLOT_LW,
-            label=rf"Richardson $p={p}$",
+            label=rf"Extrapolated $p={p}$",
         )
 
     p6 = TROTTER_EXTRA_ORDER
@@ -180,7 +180,7 @@ def _build_figure(
         marker="s", markersize=5.5,
         markevery=max(1, len(errors) // 10),
         markeredgecolor="black", markeredgewidth=0.6, markerfacecolor="white",
-        zorder=4, label=r"Best Richardson",
+        zorder=4, label=r"Best extrapolated",
     )
     right_title = None if omit_titles else "Envelope"
     _style_ax(ax_right, title=right_title, ylabel=Y_LABEL)
@@ -269,7 +269,7 @@ def main() -> None:
             "envelope (right panel)": (
                 "Best Trotter taken over p ∈ "
                 f"{{{', '.join(str(x) for x in sorted(set(orders) | {p6}))}}}; "
-                "Best Richardson taken over p ∈ "
+                "Best extrapolated taken over p ∈ "
                 f"{{{', '.join(str(x) for x in orders)}}} and both schedules."
             ),
         },
