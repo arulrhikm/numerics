@@ -113,7 +113,9 @@ def _run_one_schedule(
             else rt.get_richardson_coefficients(s_list, p, m)
         )
         bnorm1.append(rt.b_norm1(b))
-        btilde1.append(rt.b_suppressed_norm(b, q_grid, m, p))
+        btilde1.append(
+            rt.b_suppressed_norm(b, q_grid, m, p, well_conditioned=use_wc)
+        )
         b_coeffs.append([float(x) for x in b])
         q_grids.append([int(q) for q in q_grid])
 
@@ -315,8 +317,8 @@ def write_params_sidecar(
         "",
         "For each Trotter order `p`, the search returned the schedule below "
         "(Richardson depth `m`, integer refinement grid `q_k`, and the "
-        "coefficient norms `‖b‖₁`, `‖b‖₁²`, and the suppressed norm `‖b̃‖₁` "
-        "that enters the step bound).",
+        "coefficient norms `‖b‖₁`, `‖b‖₁²`, and `‖b̃‖₁ = Σ|b_i(q_i/q_min)^e|` "
+        "(`e=1` WC, `e=p` optimized) that enters the step bound).",
         "",
     ]
 

@@ -38,7 +38,6 @@ from plotting import common as cm
 
 FS_AXIS = 21
 FS_LEGEND = 16
-FS_SUPTITLE = 23
 FS_CBAR = 21
 LEGEND_MARKERSIZE = 10
 LEGEND_LINEWIDTH = 2.25
@@ -85,13 +84,8 @@ def _overhead_legend_handles() -> list[Line2D]:
     return handles
 
 
-def _panel_title(p: int, b2_cap: float, c_pref: float, brute_permutations: bool) -> str:
-    cap_s = str(int(round(b2_cap))) if abs(b2_cap - round(b2_cap)) < 1e-9 else f"{b2_cap:g}"
-    line1 = rf"Order $p = {p}$ ($\|\mathbf{{b}}\|_1^2 \leq {cap_s}$)"
-    line2 = rf"static prefactor ($c = {c_pref:.3f}$)"
-    if brute_permutations:
-        line2 = f"{line2}, permuted $q$"
-    return f"{line1}\n{line2}"
+def _panel_title(p: int) -> str:
+    return rf"$p = {p}$"
 
 
 def parse_args():
@@ -192,10 +186,9 @@ def _build_figure(
                 last_mappable = sc
 
         if not omit_titles:
-            c_pref = rt.richardson_b_over_eps_prefactor(p)
             _style_ax(
                 ax,
-                title=_panel_title(int(p), b2_cap, float(c_pref), bool(args.brute_permutations)),
+                title=_panel_title(int(p)),
                 show_ylabel=(idx == 0),
             )
         else:
@@ -214,9 +207,6 @@ def _build_figure(
             borderpad=0.45,
             labelspacing=0.55,
         )
-
-    if not omit_titles:
-        fig.suptitle("Overhead", fontsize=FS_SUPTITLE, fontweight="600", y=1.03)
 
     cbar = fig.colorbar(
         last_mappable, ax=axes, orientation="vertical", fraction=0.02, pad=0.02, aspect=30
@@ -248,7 +238,6 @@ def _build_multi_cap_figure(
         axes = np.array([axes])
 
     last_mappable = None
-    caps_label = ", ".join(format_b2_cap(c) for c in b2_caps)
     for idx, p in enumerate(orders):
         ax = axes[idx]
         r_p = results_by_order[p]
@@ -305,14 +294,7 @@ def _build_multi_cap_figure(
             last_mappable = sc
 
         if not omit_titles:
-            c_pref = rt.richardson_b_over_eps_prefactor(p)
-            title = (
-                rf"Order $p = {p}$ (opt caps: {caps_label})"
-                f"\nstatic prefactor ($c = {c_pref:.3f}$)"
-            )
-            if args.brute_permutations:
-                title = f"{title}, permuted $q$"
-            _style_ax(ax, title=title, show_ylabel=(idx == 0))
+            _style_ax(ax, title=_panel_title(int(p)), show_ylabel=(idx == 0))
         else:
             _style_ax(ax, show_ylabel=(idx == 0))
         ylim = OVERHEAD_YLIM_BY_P.get(int(p))
@@ -329,9 +311,6 @@ def _build_multi_cap_figure(
             borderpad=0.45,
             labelspacing=0.55,
         )
-
-    if not omit_titles:
-        fig.suptitle("Overhead (multi-cap optimized search)", fontsize=FS_SUPTITLE, fontweight="600", y=1.03)
 
     cbar = fig.colorbar(
         last_mappable, ax=axes, orientation="vertical", fraction=0.02, pad=0.02, aspect=30

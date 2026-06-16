@@ -37,10 +37,41 @@ After it finishes, `plots/` contains, for each of the two figures:
 
 | File                  | Contents                                                                |
 | --------------------- | ----------------------------------------------------------------------- |
-| `<fig>.png`           | Titled figure (suptitle + per-panel titles).                            |
-| `<fig>_cropped.png`   | Same data without titles, for caption-driven figures.                   |
+| `<fig>.png`           | PNG preview (overhead: panel titles `$p=1,2,4$` only; gate depth: none). |
+| `<fig>.pdf`           | Vector PDF companion (preferred for the manuscript).                    |
+| `<fig>_cropped.png`   | Caption-friendly overhead (no panel titles).                            |
+| `<fig>_cropped.pdf`   | Caption-friendly PDF (overhead + gate depth for `\includegraphics`).    |
 | `<fig>.params.md`     | Settings used + per-(p, mode, ε) optimal grids and ‖b‖ norms.           |
 | `<fig>.params.json`   | Same data plus the full Richardson coefficient vectors `b_k`.           |
+
+### Including figures in the manuscript
+
+Copy or symlink the PDFs into your paper tree:
+
+```latex
+% Three-panel overhead ($p=1,2,4$ panel labels only; no suptitle)
+\begin{figure*}
+  \centering
+  \includegraphics[width=\textwidth]{plots/overhead.pdf}
+  \caption{...}
+  \label{fig:overhead}
+\end{figure*}
+
+% Gate depth (no titles)
+\begin{figure*}
+  \centering
+  \includegraphics[width=\textwidth]{plots/gate_depth.pdf}
+  \caption{...}
+  \label{fig:gate-depth}
+\end{figure*}
+```
+
+Use `plots/overhead_cropped.pdf` / `plots/gate_depth_cropped.pdf` instead if
+the LaTeX caption supplies all panel labels and you want zero on-figure titles.
+
+For the multi-cap overhead comparison, regenerate with
+`python make_plots.py --multi-cap-overhead` and include
+`plots/overhead_multi_cap.pdf` (panel labels `$p=1,2,4$` only).
 
 Extra CLI flags can be forwarded to both underlying scripts via `--`:
 
@@ -63,7 +94,7 @@ with one row per ε on the search grid. The columns are:
 - `q_k`   — integer refinement factors (Vandermonde nodes are `s_k = 1/q_k`).
 - `‖b‖₁`  — 1-norm of the Richardson coefficients.
 - `‖b‖₁²` — sample overhead (colormap variable in the overhead panels).
-- `‖b̃‖₁` — suppressed norm `Σ |b_k| / q_k^(σ(m-1)+p)` that enters the bound.
+- `‖b̃‖₁` — `Σ |b_i (q_i/q_min)^e|` (`e=1` WC, `e=p` optimized) in the step bound.
 
 The full Richardson coefficient vector `b_k` for every (p, mode, ε), together
 with the resulting Trotter and Richardson step counts, is in the companion
@@ -85,7 +116,7 @@ triples are identical across the two figures; only the y-axis differs.
 | Number of ε samples                              | `50`                                 | `--eps-points`                    |
 | `q_min, q_max`                                   | `1, 10`                              | `--q-min`, `--q-max`              |
 | `‖b‖₁²` brute-force cap (reject above)           | `10`                                 | `--brute-bnorm-sq-max`            |
-| System size `n` (gate-depth only)                | `299`                                | `--n-sys`                         |
+| System size `n` (gate-depth only)                | `100`                                | `--n-sys`                         |
 | Hide `p = 1` Richardson points with `‖b‖₁² >` …  | `1000`                               | `--omit-p1-sample-overhead-above` |
 
 Run `python plotting/plot_overhead.py --help` (or `plot_gate_depth.py --help`)

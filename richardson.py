@@ -6,7 +6,7 @@ Public API consumed by the plotting scripts:
   per target precision.
 * ``get_richardson_coefficients`` — p-specific Vandermonde (optimized search).
 * ``get_wc_richardson_coefficients`` — even-power WC Vandermonde (closed form).
-* ``b_norm1`` / ``b_suppressed_norm`` — coefficient norms.
+* ``b_norm1`` / ``b_suppressed_norm`` — coefficient norms (`‖b̃‖₁` per Eqs. 220--223).
 * ``compute_lambda_scale`` — λ-comm ratio (``lemma57_fixed`` / ``legacy``).
 * ``compute_steps_plane_wave`` / ``compute_steps_gate_depth`` — step counts.
 * ``gate_overhead`` — ``C_p`` (Suzuki exponentials per Trotter step).
@@ -79,12 +79,34 @@ def b_norm1(b) -> float:
     return float(np.sum(np.abs(np.asarray(b, dtype=float))))
 
 
-def b_suppressed_norm(b, q_integers, m: int, p: int) -> float:
-    """Suppressed norm ``Σ |b_k| / q_k^(σ(m-1)+p)`` used in the step bound."""
-    exp_ = sigma_parity(p) * (int(m) - 1) + int(p)
+def q_refinement_ratio(q_integers) -> float:
+    """Factor ``q_max / q_min`` on Richardson Trotter step counts (Eqs. 124, 140)."""
+    q = np.asarray(q_integers, dtype=float)
+    q_min = float(np.min(q))
+    if q_min <= 0:
+        return float(np.max(q))
+    return float(np.max(q) / q_min)
+
+
+def b_suppressed_norm(
+    b,
+    q_integers,
+    m: int,
+    p: int,
+    *,
+    well_conditioned: bool = False,
+) -> float:
+    """Norm ``Σ |b̃_i|`` with ``b̃_i = b_i (q_i / q_min)^e`` (Eqs. 220--223).
+
+    ``e = 1`` on well-conditioned grids; ``e = p`` on brute-force optimized grids.
+    """
+    del m
     b = np.asarray(b, dtype=float)
     q = np.asarray(q_integers, dtype=float)
-    return float(np.sum(np.abs(b) / (q**exp_)))
+    q_min = float(np.min(q))
+    exp = 1 if well_conditioned else int(p)
+    scaled = b * ((q / q_min) ** exp)
+    return float(np.sum(np.abs(scaled)))
 
 
 def safe_power(base: float, m: float) -> float:
@@ -272,7 +294,7 @@ def compute_steps_plane_wave(error: float, m: int, m_expr: float, p: int,
 
 
 def compute_steps_gate_depth(error: float, m: int, m_expr: float, p: int,
-                             A: float = 1.0, n: int = 299) -> tuple[float, float]:
+                             A: float = 1.0, n: int = 100) -> tuple[float, float]:
     """Total gate depth ``(trotter, richardson)``, i.e. step counts multiplied by ``C_p``."""
     c = gate_overhead(p)
     trotter = c ** (1 + 1 / p) * (error ** (-1.0 / p)) * ((2.0 / (1.0 + p)) ** (1.0 / p))
@@ -310,10 +332,12 @@ def _score_grid(
         b_list, _ = _richardson_coefficients_for_grid(
             s_list, p=p, m=m, well_conditioned=well_conditioned,
         )
-    b_tilde = b_suppressed_norm(b_list, q_grid, m, p)
+    b_tilde = b_suppressed_norm(
+        b_list, q_grid, m, p, well_conditioned=well_conditioned,
+    )
     den_eps = richardson_stepcount_eps_denominator(m, p)
     K = richardson_b_over_eps_prefactor(p)
-    base_val = max(q_grid) * safe_power(K * b_tilde / error, den_eps)
+    base_val = q_refinement_ratio(q_grid) * safe_power(K * b_tilde / error, den_eps)
     lam = compute_lambda_scale(A, m, p, n=n)
     full_val = (lam ** richardson_lambda_comm_exponent(p)) * base_val
     return base_val, full_val, b_list

@@ -1,7 +1,7 @@
 """Gate-depth figure: per-order curves (left) and order-envelope (right).
 
 Same ``compute_min_samples`` schedules as the overhead figure, but with
-``compute_steps_gate_depth`` (``n = 299`` by default) on the y-axis. The left
+``compute_steps_gate_depth`` (``n = 100`` by default) on the y-axis. The left
 panel additionally overlays a closed-form vanilla Trotter ``p = 6`` line (no
 Richardson ``p = 6`` search is performed).
 """
@@ -30,7 +30,6 @@ from plotting import common as cm
 
 FS_AXIS = 15
 FS_LEGEND = 13
-FS_SUPTITLE = 17
 LEGEND_LINEWIDTH = 2.25
 LEGEND_HANDLELEN = 2.75
 PLOT_LW = 2.25
@@ -89,8 +88,8 @@ def parse_args():
     parser.add_argument(
         "--n-sys",
         type=int,
-        default=299,
-        help="System size n passed to compute_steps_gate_depth (default 299).",
+        default=100,
+        help="System size n passed to compute_steps_gate_depth (default 100).",
     )
     parser.add_argument(
         "--no-cropped",
@@ -105,10 +104,9 @@ def _build_figure(
     orders: list[int],
     errors: np.ndarray,
     results_by_order: dict,
-    b2_lab: str,
     omit_titles: bool,
 ) -> plt.Figure:
-    fig_h = 5.2 if omit_titles else 6.2
+    fig_h = 5.2
     fig, axes = plt.subplots(1, 2, figsize=(14.5, fig_h), constrained_layout=True)
     ax_left, ax_right = axes
 
@@ -136,8 +134,7 @@ def _build_figure(
         label=rf"Trotter $p={p6}$",
     )
 
-    left_title = None if omit_titles else rf"Per order ($\|\mathbf{{b}}\|_1^2 \leq {b2_lab}$)"
-    _style_ax(ax_left, title=left_title, ylabel=Y_LABEL)
+    _style_ax(ax_left, ylabel=Y_LABEL)
     _legend(ax_left, ncol=2, loc="upper right")
 
     trotter_envs = [results_by_order[p].get("wc", results_by_order[p]["opt"])["trotter"] for p in orders] + [trot6]
@@ -180,14 +177,11 @@ def _build_figure(
         markeredgecolor="black", markeredgewidth=0.6, markerfacecolor="white",
         zorder=4, label=r"Best extrapolated",
     )
-    right_title = None if omit_titles else "Envelope"
-    _style_ax(ax_right, title=right_title, ylabel=Y_LABEL)
+    _style_ax(ax_right, ylabel=Y_LABEL)
     leg_r = _legend(ax_right, ncol=1, loc="upper right")
     for line in leg_r.get_lines():
         line.set_linewidth(PLOT_LW + 0.35)
 
-    if not omit_titles:
-        fig.suptitle("Gate depth", fontsize=FS_SUPTITLE, fontweight="600", y=1.02)
     return fig
 
 
@@ -221,12 +215,10 @@ def main() -> None:
         n_sys=n_sys,
     )
 
-    b2_lab = str(int(b2_cap)) if abs(b2_cap - round(b2_cap)) < 1e-9 else f"{b2_cap:g}"
-
     def save(omit_titles: bool, name: str) -> None:
         fig = _build_figure(
             orders=orders, errors=errors, results_by_order=results_by_order,
-            b2_lab=b2_lab, omit_titles=omit_titles,
+            omit_titles=omit_titles,
         )
         for path in cm.save_figure(fig, output_dir / name):
             print(f"  Saved {path}")
