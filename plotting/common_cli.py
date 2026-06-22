@@ -6,8 +6,13 @@ import argparse
 from pathlib import Path
 
 
-def add_shared_grid_args(parser: argparse.ArgumentParser, default_q_max: int) -> None:
+DEFAULT_Q_MAX = 15
+
+
+def add_shared_grid_args(parser: argparse.ArgumentParser, default_q_max: int | None = None) -> None:
     """Add the ε / q grid arguments shared by both plot scripts."""
+    if default_q_max is None:
+        default_q_max = DEFAULT_Q_MAX
     parser.add_argument("--q-max", type=int, default=default_q_max)
     parser.add_argument("--q-min", type=int, default=1)
     parser.add_argument("--brute-bnorm-sq-max", type=float, default=10.0)

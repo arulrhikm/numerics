@@ -114,7 +114,7 @@ triples are identical across the two figures; only the y-axis differs.
 | ε grid lower edge (log10)                        | `-6`                                 | `--eps-log-min`                   |
 | ε grid upper edge (log10)                        | `log10(0.9) ≈ -0.0458`               | `--eps-log-max`                   |
 | Number of ε samples                              | `50`                                 | `--eps-points`                    |
-| `q_min, q_max`                                   | `1, 10`                              | `--q-min`, `--q-max`              |
+| `q_min, q_max` (Richardson depth `m` also runs `1 … q_max`) | `1, 15`                              | `--q-min`, `--q-max`              |
 | `‖b‖₁²` brute-force cap (reject above)           | `10`                                 | `--brute-bnorm-sq-max`            |
 | System size `n` (gate-depth only)                | `100`                                | `--n-sys`                         |
 | Hide `p = 1` Richardson points with `‖b‖₁² >` …  | `1000`                               | `--omit-p1-sample-overhead-above` |

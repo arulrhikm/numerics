@@ -81,7 +81,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Gate-depth figure (per-order + envelope).")
     parser.add_argument("--out-dir", type=str, default="plots", help="Output directory.")
     parser.add_argument("--output", type=str, default="gate_depth.png", help="Titled output filename.")
-    add_shared_grid_args(parser, default_q_max=10)
+    add_shared_grid_args(parser)
     parser.set_defaults(eps_log_max=np.log10(0.9))
     parser.add_argument("--orders", type=str, default="1,2,4", help="Comma-separated Trotter orders p.")
     add_shared_search_args(parser)
