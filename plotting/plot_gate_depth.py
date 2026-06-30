@@ -12,10 +12,8 @@ import argparse
 import sys
 from pathlib import Path
 
-import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.lines import Line2D
 
 _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
@@ -188,89 +186,6 @@ def _build_figure(
     return fig
 
 
-SUMMARY_FS = 18
-SUMMARY_CBAR_VMIN = 1.0
-SUMMARY_CBAR_VMAX = 100.0
-SUMMARY_CBAR_LABEL = r"$\|\mathbf{b}\|_1^2$  (sample overhead factor)"
-
-
-def _envelopes(orders, errors, results_by_order):
-    """Best-Trotter and best-extrapolated envelopes, plus the sample overhead
-    ``‖b‖₁²`` of the winning Richardson schedule at each ε."""
-    trot6 = _analytic_trotter_gate_depth(errors, TROTTER_EXTRA_ORDER)
-    trot_curves = [
-        results_by_order[p].get("wc", results_by_order[p]["opt"])["trotter"]
-        for p in orders
-    ] + [trot6]
-    trot_env = np.minimum.reduce(trot_curves)
-
-    rich_env = np.full(len(errors), np.inf)
-    so_env = np.full(len(errors), np.nan)
-    for p in orders:
-        r_p = results_by_order[p]
-        for mode in ("wc", "opt"):
-            if mode not in r_p:
-                continue
-            steps = np.asarray(r_p[mode]["richardson"], dtype=float)
-            so = np.asarray(r_p[mode]["sample_overhead"], dtype=float)
-            better = steps < rich_env
-            rich_env = np.where(better, steps, rich_env)
-            so_env = np.where(better, so, so_env)
-    return trot_env, rich_env, so_env
-
-
-def _build_summary_figure(
-    *,
-    orders: list[int],
-    errors: np.ndarray,
-    results_by_order: dict,
-) -> plt.Figure:
-    """Standalone square version of the right (envelope) panel: gray Trotter
-    line + best-extrapolated triangles colored by sample overhead."""
-    trot_env, rich_env, so_env = _envelopes(orders, errors, results_by_order)
-    trot_p_tex = ",".join(str(x) for x in sorted(set(orders) | {TROTTER_EXTRA_ORDER}))
-    ext_p_tex = ",".join(str(p) for p in orders)
-
-    norm = mcolors.LogNorm(vmin=SUMMARY_CBAR_VMIN, vmax=SUMMARY_CBAR_VMAX, clip=False)
-    cmap = plt.get_cmap("viridis")
-
-    fig, ax = plt.subplots(figsize=(6.6, 6.6), constrained_layout=True)
-    ax.plot(
-        errors, trot_env, "-", color="gray", linewidth=PLOT_LW + 0.35, zorder=2,
-    )
-    sc = ax.scatter(
-        errors, rich_env, c=so_env, cmap=cmap, norm=norm,
-        marker="^", s=70, linewidths=0, edgecolors="none", zorder=3,
-    )
-
-    ax.set_xscale("log")
-    ax.set_yscale("log")
-    ax.set_xlabel(r"Precision  $\varepsilon$", fontsize=SUMMARY_FS)
-    ax.set_ylabel(Y_LABEL, fontsize=SUMMARY_FS)
-    ax.tick_params(axis="both", labelsize=SUMMARY_FS)
-    ax.grid(True, which="major", ls="-", alpha=0.25)
-    ax.grid(True, which="minor", ls=":", alpha=0.12)
-    ax.set_box_aspect(1)
-
-    handles = [
-        Line2D(
-            [0], [0], color="gray", linewidth=PLOT_LW + 0.35,
-            label=rf"Best Trotter $p \in \{{{trot_p_tex}\}}$",
-        ),
-        Line2D(
-            [0], [0], marker="^", linestyle="None", markersize=10,
-            markerfacecolor=cmap(0.6), markeredgecolor="none",
-            label=rf"Best extrapolated $p \in \{{{ext_p_tex}\}}$",
-        ),
-    ]
-    ax.legend(handles=handles, fontsize=SUMMARY_FS, loc="upper right", framealpha=0.92)
-
-    cbar = fig.colorbar(sc, ax=ax, fraction=0.046, pad=0.02)
-    cbar.set_label(SUMMARY_CBAR_LABEL, fontsize=SUMMARY_FS)
-    cbar.ax.tick_params(labelsize=SUMMARY_FS)
-    return fig
-
-
 def main() -> None:
     args = parse_args()
     rt.set_lambda_scale_mode(args.lambda_mode)
@@ -314,13 +229,6 @@ def main() -> None:
     save(omit_titles=False, name=args.output)
     if not args.no_cropped:
         save(omit_titles=True, name=f"{stem.stem}_cropped{stem.suffix}")
-
-    summary_fig = _build_summary_figure(
-        orders=orders, errors=errors, results_by_order=results_by_order,
-    )
-    for path in cm.save_figure(summary_fig, output_dir / f"{stem.stem}_summary{stem.suffix}"):
-        print(f"  Saved {path}")
-    plt.close(summary_fig)
 
     p6 = TROTTER_EXTRA_ORDER
     c6 = int(rt.gate_overhead(p6))

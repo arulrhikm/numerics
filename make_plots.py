@@ -19,6 +19,8 @@ _ROOT = Path(__file__).resolve().parent
 _SCRIPTS = [
     _ROOT / "plotting" / "plot_overhead.py",
     _ROOT / "plotting" / "plot_gate_depth.py",
+    # reads the two sidecars written above; must run last
+    _ROOT / "plotting" / "plot_summary.py",
 ]
 
 

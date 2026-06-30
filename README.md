@@ -134,9 +134,19 @@ The right-panel "Best Trotter" envelope is the pointwise minimum over
 is the pointwise minimum over `p ∈ {1, 2, 4}` and the two schedules. The faint
 colored traces repeat the per-order curves for reference.
 
-A standalone, square companion `gate_depth_summary.{png,pdf}` is also written: it
-is the right (envelope) panel alone, with the faint colored traces removed, the
-Trotter envelope drawn in gray, and the "Best extrapolated" envelope drawn as
-triangle markers colored by sample overhead `‖b‖₁²` (viridis, `LogNorm` over
-`[1, 100]`). It is sized square for placing side by side with the exact-error
-figure.
+## Summary figure
+
+`plotting/plot_summary.py` assembles a side-by-side, two-square-panel
+`summary.{png,pdf}` from the two committed sidecars (so it matches the
+published panels exactly — regenerate those first):
+
+- **Left**: the gate-depth envelope (the right gate-depth panel) in black only —
+  "Best Trotter" and "Best extrapolated" envelopes, with the faint per-order
+  colored traces removed.
+- **Right**: the `p = 2` panel of the overhead figure — the Trotter baseline plus
+  the LKW (squares) and brute-force (triangles) Richardson schedules colored by
+  sample overhead `‖b‖₁²` (viridis, same `LogNorm` over `[1, 1000]` as the
+  overhead figure).
+
+Both panels are square so the figure can sit beside the exact-error plot.
+`make_plots.py` runs it last, after both sidecars are written.
