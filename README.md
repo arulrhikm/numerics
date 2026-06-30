@@ -115,7 +115,7 @@ triples are identical across the two figures; only the y-axis differs.
 | ε grid upper edge (log10)                        | `log10(0.9) ≈ -0.0458`               | `--eps-log-max`                   |
 | Number of ε samples                              | `50`                                 | `--eps-points`                    |
 | `q_min, q_max` (Richardson depth `m` also runs `1 … q_max`) | `1, 15`                              | `--q-min`, `--q-max`              |
-| `‖b‖₁²` brute-force cap (reject above)           | `10`                                 | `--brute-bnorm-sq-max`            |
+| `‖b‖₁²` brute-force cap (reject above)           | `100`                                | `--brute-bnorm-sq-max`            |
 | System size `n` (gate-depth only)                | `100`                                | `--n-sys`                         |
 | Hide `p = 1` Richardson points with `‖b‖₁² >` …  | `1000`                               | `--omit-p1-sample-overhead-above` |
 
@@ -133,3 +133,10 @@ The right-panel "Best Trotter" envelope is the pointwise minimum over
 `p ∈ {1, 2, 4, 6}` (it includes the analytic `p = 6` line). "Best extrapolated"
 is the pointwise minimum over `p ∈ {1, 2, 4}` and the two schedules. The faint
 colored traces repeat the per-order curves for reference.
+
+A standalone, square companion `gate_depth_summary.{png,pdf}` is also written: it
+is the right (envelope) panel alone, with the faint colored traces removed, the
+Trotter envelope drawn in gray, and the "Best extrapolated" envelope drawn as
+triangle markers colored by sample overhead `‖b‖₁²` (viridis, `LogNorm` over
+`[1, 100]`). It is sized square for placing side by side with the exact-error
+figure.

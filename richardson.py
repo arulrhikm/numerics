@@ -38,7 +38,7 @@ BRUTE_FORCE_B_NORM1_SQ_MAX_DEFAULT: float = 1e6
 # Pre-tabulated Lemma 57 geometric ratios for the orders we evaluate often.
 LEMMA57_GEOMETRIC_RATIO_BY_P: dict[int, float] = {
     1: 1.5035,
-    2: 1.1487,
+    2: 1.1232,
     4: 1.0445,
 }
 

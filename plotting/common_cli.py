@@ -15,7 +15,7 @@ def add_shared_grid_args(parser: argparse.ArgumentParser, default_q_max: int | N
         default_q_max = DEFAULT_Q_MAX
     parser.add_argument("--q-max", type=int, default=default_q_max)
     parser.add_argument("--q-min", type=int, default=1)
-    parser.add_argument("--brute-bnorm-sq-max", type=float, default=10.0)
+    parser.add_argument("--brute-bnorm-sq-max", type=float, default=100.0)
     parser.add_argument("--eps-log-min", type=float, default=-6.0)
     parser.add_argument("--eps-log-max", type=float, default=0.0)
     parser.add_argument("--eps-points", type=int, default=50)
