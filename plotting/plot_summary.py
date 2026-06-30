@@ -60,6 +60,8 @@ def _style(ax, *, xlabel=True, ylabel=None, title=None):
 
 
 def _gate_depth_envelopes(g: dict):
+    """Best-Trotter / best-extrapolated envelopes, plus the sample overhead
+    ``‖b‖₁²`` of the winning Richardson schedule at each ε."""
     eps = np.array(g["epsilon"])
     orders = g["orders"]
     trot6 = rt.gate_overhead(TROTTER_EXTRA_ORDER) ** (1 + 1 / TROTTER_EXTRA_ORDER) * (
@@ -67,32 +69,44 @@ def _gate_depth_envelopes(g: dict):
     ) * ((2 / (1 + TROTTER_EXTRA_ORDER)) ** (1.0 / TROTTER_EXTRA_ORDER))
     trot_curves = [trot6]
     rich_env = np.full(len(eps), np.inf)
+    so_env = np.full(len(eps), np.nan)
     for p in orders:
         rp = g["results"][str(p)]
         trot_curves.append(np.array(rp.get("wc", rp["opt"])["trotter_steps"]))
-        ro = np.array(rp["opt"]["richardson_steps"])
-        if "wc" in rp:
-            ro = np.minimum(ro, np.array(rp["wc"]["richardson_steps"]))
-        rich_env = np.minimum(rich_env, ro)
-    return eps, orders, np.minimum.reduce(trot_curves), rich_env
+        for mode in ("wc", "opt"):
+            if mode not in rp:
+                continue
+            steps = np.array(rp[mode]["richardson_steps"])
+            so = np.array(rp[mode]["bnorm1_sq"])
+            better = steps < rich_env
+            rich_env = np.where(better, steps, rich_env)
+            so_env = np.where(better, so, so_env)
+    return eps, orders, np.minimum.reduce(trot_curves), rich_env, so_env
 
 
 def _draw_gate_depth_panel(ax, g: dict):
-    eps, orders, trot_env, rich_env = _gate_depth_envelopes(g)
+    eps, orders, trot_env, rich_env, so_env = _gate_depth_envelopes(g)
     trot_p_tex = ",".join(str(x) for x in sorted(set(orders) | {TROTTER_EXTRA_ORDER}))
     ext_p_tex = ",".join(str(p) for p in orders)
+    norm = mcolors.LogNorm(vmin=CBAR_VMIN, vmax=CBAR_VMAX, clip=False)
+    cmap = plt.get_cmap("viridis")
     ax.plot(
-        eps, trot_env, "k-", linewidth=PLOT_LW + 0.35, zorder=4,
+        eps, trot_env, "-", color="gray", linewidth=PLOT_LW + 0.35, zorder=2,
         label=rf"Best Trotter $p \in \{{{trot_p_tex}\}}$",
     )
-    ax.plot(
-        eps, rich_env, "k--", linewidth=PLOT_LW + 0.35, marker="s", markersize=5.5,
-        markevery=max(1, len(eps) // 10), markeredgecolor="black", markeredgewidth=0.6,
-        markerfacecolor="white", zorder=4,
-        label=rf"Best extrapolated $p \in \{{{ext_p_tex}\}}$",
+    ax.scatter(
+        eps, rich_env, c=so_env, cmap=cmap, norm=norm, marker="^", s=70,
+        linewidths=0, edgecolors="none", zorder=3,
     )
     _style(ax, ylabel="Gate depth")
-    ax.legend(fontsize=FS, loc="upper right", framealpha=0.92)
+    handles = [
+        Line2D([0], [0], color="gray", linewidth=PLOT_LW + 0.35,
+               label=rf"Best Trotter $p \in \{{{trot_p_tex}\}}$"),
+        Line2D([0], [0], marker="^", linestyle="None", markersize=10,
+               markerfacecolor=cmap(0.6), markeredgecolor="none",
+               label=rf"Best extrapolated $p \in \{{{ext_p_tex}\}}$"),
+    ]
+    ax.legend(handles=handles, fontsize=FS, loc="upper right", framealpha=0.92)
 
 
 def _draw_overhead_panel(ax, o: dict, p: int):
