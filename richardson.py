@@ -38,7 +38,7 @@ BRUTE_FORCE_B_NORM1_SQ_MAX_DEFAULT: float = 1e6
 # Pre-tabulated Lemma 57 geometric ratios for the orders we evaluate often.
 LEMMA57_GEOMETRIC_RATIO_BY_P: dict[int, float] = {
     1: 1.5035,
-    2: 1.1232,
+    2: 1.0968,
     4: 1.0445,
 }
 
@@ -96,16 +96,20 @@ def b_suppressed_norm(
     *,
     well_conditioned: bool = False,
 ) -> float:
-    """Norm ``Σ |b̃_i|`` with ``b̃_i = b_i (q_i / q_min)^e`` (Eqs. 220--223).
+    """Norm ``Σ |b̃_i|`` with ``b̃_i = b_i (q_min / q_i)^e`` (section.tex Eq. 48).
 
-    ``e = 1`` on well-conditioned grids; ``e = p`` on brute-force optimized grids.
+    The reference point is ``q_1 = q_min`` (largest step ``s_1``), so the ratio
+    ``q_min / q_i ≤ 1`` and the suppressed norm is *smaller* than ``‖b‖₁`` — the
+    refinement of the error-series remainder amplification. ``e = 1`` on
+    well-conditioned grids (``‖b^(1)‖``); ``e = p`` on brute-force optimized
+    grids (``‖b^(p)‖``).
     """
     del m
     b = np.asarray(b, dtype=float)
     q = np.asarray(q_integers, dtype=float)
     q_min = float(np.min(q))
     exp = 1 if well_conditioned else int(p)
-    scaled = b * ((q / q_min) ** exp)
+    scaled = b * ((q_min / q) ** exp)
     return float(np.sum(np.abs(scaled)))
 
 

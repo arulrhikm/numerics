@@ -317,7 +317,7 @@ def write_params_sidecar(
         "",
         "For each Trotter order `p`, the search returned the schedule below "
         "(Richardson depth `m`, integer refinement grid `q_k`, and the "
-        "coefficient norms `‖b‖₁`, `‖b‖₁²`, and `‖b̃‖₁ = Σ|b_i(q_i/q_min)^e|` "
+        "coefficient norms `‖b‖₁`, `‖b‖₁²`, and `‖b̃‖₁ = Σ|b_i(q_min/q_i)^e|` "
         "(`e=1` WC, `e=p` optimized) that enters the step bound).",
         "",
     ]

@@ -94,7 +94,7 @@ with one row per ε on the search grid. The columns are:
 - `q_k`   — integer refinement factors (Vandermonde nodes are `s_k = 1/q_k`).
 - `‖b‖₁`  — 1-norm of the Richardson coefficients.
 - `‖b‖₁²` — sample overhead (colormap variable in the overhead panels).
-- `‖b̃‖₁` — `Σ |b_i (q_i/q_min)^e|` (`e=1` WC, `e=p` optimized) in the step bound.
+- `‖b̃‖₁` — `Σ |b_i (q_min/q_i)^e|` (`e=1` WC, `e=p` optimized) in the step bound.
 
 The full Richardson coefficient vector `b_k` for every (p, mode, ε), together
 with the resulting Trotter and Richardson step counts, is in the companion
