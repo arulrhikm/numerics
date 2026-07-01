@@ -26,10 +26,14 @@ from __future__ import annotations
 
 import itertools
 import json
+import math
 import sys
 from pathlib import Path
 
+import matplotlib.colors as mcolors
+import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.lines import Line2D
 
 _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
@@ -39,6 +43,8 @@ import richardson as rt
 
 ORDERS = (1, 2, 4)
 Q_MAX = 15
+A_CONST = 4.0                       # a(eps) reference value (Samson: a)
+C_CONST = (math.e - 1) * A_CONST / (A_CONST - 1)   # c = (e-1)a/(a-1)
 
 
 def _tex_suppressed_norm(b, q, p, *, well_conditioned=False):
@@ -119,12 +125,71 @@ def check6_lambda_comm_line() -> None:
     print()
 
 
+def build_sanity_plot() -> None:
+    """Per-order sanity plot (Samson's formulas) from overhead.params.json.
+
+    For each order p, versus precision eps:
+      * Trotter line:  (2/(1+p))^(1/p) * eps^(-1/p)
+      * Our plotted objective C (Fig. 3 data): richardson_steps, markers colored
+        by sample overhead ||b||_1^2  ->  the "what did you plot" curve.
+      * Samson's data formula D = (q_max/q_min)*lambda_scale*(c*||b~||_1/eps)^(1/p),
+        c = (e-1)a/(a-1), a=4  (open markers) -- differs from C where m>1 because
+        it uses lambda_scale^1 and exponent 1/p rather than lambda_scale^(1+1/p)
+        and 1/(sigma(m-1)+p).
+      * Samson's sanity line L = (q_max/q_min)*a*lambda_scale  (thin dotted).
+    """
+    o = json.loads((_ROOT / "plots" / "overhead.params.json").read_text(encoding="utf-8"))
+    eps = np.array(o["epsilon"])
+    norm = mcolors.LogNorm(vmin=1.0, vmax=1000.0, clip=False)
+    cmap = plt.get_cmap("viridis")
+
+    fig, axes = plt.subplots(1, 3, figsize=(16, 5.4), constrained_layout=True)
+    mappable = None
+    for ax, p in zip(axes, ORDERS):
+        r = o["results"][str(p)]["opt"]
+        q = [np.array(g, float) for g in r["q_grids"]]
+        qrat = np.array([qq.max() / qq.min() for qq in q])
+        lam = rt.LEMMA57_GEOMETRIC_RATIO_BY_P[p]
+        btilde = np.array(r["btilde1"])
+        so = np.array(r["bnorm1_sq"])
+        our = np.array(r["richardson_steps"])
+
+        trotter = (2 / (1 + p)) ** (1.0 / p) * eps ** (-1.0 / p)
+        samson_D = qrat * lam * (C_CONST * btilde / eps) ** (1.0 / p)
+        samson_L = qrat * A_CONST * lam
+
+        ax.plot(eps, trotter, "--", color="gray", lw=2, label="Trotter")
+        mappable = ax.scatter(eps, our, c=so, cmap=cmap, norm=norm, s=55, marker="^",
+                              linewidths=0, zorder=4, label="_")
+        ax.plot(eps, our, "-", color="#222", lw=1.0, alpha=0.6, zorder=3,
+                label="Our plotted objective $\\mathcal{C}$")
+        ax.plot(eps, samson_D, ":", color="#c026d3", lw=2.0,
+                label=r"Samson $D=\frac{q_{max}}{q_{min}}\lambda(c\|\tilde b\|/\varepsilon)^{1/p}$")
+        ax.plot(eps, samson_L, "-.", color="#0891b2", lw=1.6,
+                label=r"Sanity line $\frac{q_{max}}{q_{min}} a\,\lambda$")
+        ax.set_xscale("log"); ax.set_yscale("log")
+        ax.set_xlabel(r"Precision $\varepsilon$", fontsize=13)
+        if p == ORDERS[0]:
+            ax.set_ylabel("Maximum # Trotter steps", fontsize=13)
+        ax.set_title(rf"$p={p}$   ($\lambda_{{scale}}={lam:g}$)", fontsize=13)
+        ax.grid(True, which="major", ls="-", alpha=0.25)
+        ax.grid(True, which="minor", ls=":", alpha=0.12)
+        ax.legend(fontsize=9, loc="upper right")
+    cbar = fig.colorbar(mappable, ax=axes, fraction=0.02, pad=0.01)
+    cbar.set_label(r"$\|\mathbf{b}\|_1^2$ (sample overhead)", fontsize=12)
+    for path in (_ROOT / "plots" / "sanity_check.png", _ROOT / "plots" / "sanity_check.pdf"):
+        fig.savefig(path, bbox_inches="tight")
+        print(f"  Saved {path}")
+    plt.close(fig)
+
+
 def main() -> None:
     check1_suppressed_norm()
     check3_force_q1_one()
     check5_trivial_at_eps1()
     check4_parallel_to_trotter()
     check6_lambda_comm_line()
+    build_sanity_plot()
 
 
 if __name__ == "__main__":
