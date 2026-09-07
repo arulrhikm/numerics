@@ -14,8 +14,11 @@ Runs, in order:
     plotting/plot_summary.py     -> plots/summary.{png,pdf}              (Fig. 2)
                                     assembled from the sidecars above
 
-Extra arguments after ``--`` are forwarded to the two search scripts only; the
-summary takes none. The exact-error figure (Fig. 6) lives in ``error_analysis/``
+Extra arguments after ``--`` are forwarded to all three scripts. The summary
+takes no search flags but does honour ``--out-dir``, and drops the rest via
+``parse_known_args``, so a run with ``--out-dir`` stays inside that directory
+and leaves the committed figures alone. The exact-error figure (Fig. 6) lives in
+``error_analysis/``
 and is added here once its script exists.
 """
 
@@ -48,9 +51,9 @@ def main() -> int:
     extra = _extra_args(sys.argv[1:])
     for script, fixed in _STEPS:
         print(f"\n=== Running {script.relative_to(_ROOT)} ===")
-        cmd = [sys.executable, str(script), *fixed]
-        if script.name != "plot_summary.py":
-            cmd.extend(extra)
+        # plot_summary.py uses parse_known_args, so forwarding the search flags
+        # to it is harmless and is what carries --out-dir through to the summary.
+        cmd = [sys.executable, str(script), *fixed, *extra]
         rc = subprocess.call(cmd, cwd=_ROOT)
         if rc != 0:
             return rc

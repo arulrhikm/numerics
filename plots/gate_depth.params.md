@@ -1,6 +1,6 @@
 # Gate-depth figure parameters
 
-Companion data for `plots/gate_depth.png` (and `plots/gate_depth_cropped.png`).
+Search settings and per-ε schedules for the `gate_depth` search. README.md maps each search to the paper figure it feeds.
 
 ## Settings
 

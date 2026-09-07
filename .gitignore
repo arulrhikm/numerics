@@ -4,16 +4,13 @@ __pycache__/
 .venv/
 venv/
 env/
-.ipynb_checkpoints/
 .DS_Store
-*.aux
-*.log
-*.out
-*.synctex.gz
-*.toc
-*.fdb_latexmk
-*.fls
-.cursor/
+
+# Scratch output dir used by the reduced-grid smoke test in README.md
+_scratch/
+
+# plot_overhead.py always emits a single-cap figure; the paper uses the
+# multi-cap one. The cropped variants are caption-free duplicates.
 plots/overhead.png
 plots/overhead.pdf
 plots/*_cropped.*

@@ -290,6 +290,12 @@ def write_params_sidecar(
 
     The Markdown is a human summary; the JSON has the full numerical data
     (Richardson coefficients ``b_k`` and per-curve step counts).
+
+    The header deliberately names no figure file. Not every stem has one
+    (``gate_depth_multi_cap`` is search output read by ``plot_summary.py``, and
+    the repository ships no single-cap ``overhead`` figure), and naming files
+    conditionally would make the sidecar differ between runs. ``README.md``
+    carries the stem-to-paper-figure map instead.
     """
     md_path = output_dir / f"{stem}.params.md"
     json_path = output_dir / f"{stem}.params.json"
@@ -298,7 +304,8 @@ def write_params_sidecar(
     out: list[str] = [
         f"# {title}",
         "",
-        f"Companion data for `plots/{stem}.png` (and `plots/{stem}_cropped.png`).",
+        f"Search settings and per-ε schedules for the `{stem}` search. "
+        "README.md maps each search to the paper figure it feeds.",
         "",
         "## Settings",
         "",

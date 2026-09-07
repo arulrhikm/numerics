@@ -1,6 +1,6 @@
 # Gate-depth multi-cap figure parameters
 
-Companion data for `plots/gate_depth_multi_cap.png` (and `plots/gate_depth_multi_cap_cropped.png`).
+Search settings and per-ε schedules for the `gate_depth_multi_cap` search. README.md maps each search to the paper figure it feeds.
 
 ## Settings
 

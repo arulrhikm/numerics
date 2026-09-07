@@ -1,8 +1,8 @@
 # error_analysis/ — the exact-error figure (paper Figure 6)
 
-**Status: the script that produced Figure 6 is not in the repository yet.** It is being
-contributed by Samson Wang. This file records what that script must compute and where it
-must write its output, so that it drops into the existing pipeline without further changes.
+**Status: the script that produced Figure 6 is not in the repository yet.** This file
+records what it must compute and where it must write its output, so that it drops into the
+existing pipeline without further changes.
 
 ## What Figure 6 shows (paper, Sec. "Empirical error")
 
@@ -20,8 +20,6 @@ time evolution `exp(-iHt)` approximated by the **second-order** Suzuki-Trotter f
 - **Right panel.** The same with a layer of random single-qubit `X`-rotations inserted to
   model measurement noise; a red dotted line marks the noise rate corresponding to one
   standard deviation. Only the best-conditioned schedules, `‖b‖₁ ≤ √10`, are plotted.
-
-The paper does **not** state the noise rate or the seed; both must come with the code.
 
 ## Interface the script should follow
 
@@ -42,6 +40,7 @@ The paper does **not** state the noise rate or the seed; both must come with the
    side, clean on the left and noisy on the right.
 
 3. **Entry point.** A single `python error_analysis/exact_error.py` from the repo root,
-   numpy/scipy/matplotlib only, with the model parameters, `t`, the Trotter-step window,
-   the noise rate and the seed as module-level constants or CLI flags. Once it exists,
-   add it to `make_plots.py` so one command reproduces every figure.
+   numpy/scipy/matplotlib only. The model parameters, `t`, the Trotter-step window, the
+   noise rate and the random seed should be module-level constants or CLI flags, so that a
+   reader can see and vary every input to the figure. Once it exists, add it to
+   `make_plots.py` so one command reproduces every figure.

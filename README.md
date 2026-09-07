@@ -36,7 +36,7 @@ a rerun with default settings reproduces the committed sidecars byte for byte. F
 check of the pipeline, forward a smaller grid to both search scripts (under a minute):
 
 ```bash
-python make_plots.py -- --eps-points 4 --q-max 4 --out-dir /tmp/plots
+python make_plots.py -- --eps-points 4 --q-max 4 --out-dir _scratch
 python plotting/plot_overhead.py --help       # full option list
 ```
 
@@ -89,10 +89,18 @@ with and without a random single-qubit `X`-rotation noise layer. The script is b
 
 ## Parameter sidecars
 
-Every search-driven figure writes `<fig>.params.md` and `<fig>.params.json` beside it
-(`overhead`, `overhead_multi_cap`, `gate_depth`, `gate_depth_multi_cap`; the `overhead` pair
-has no figure of its own and feeds the right panel of Fig. 2). The Markdown table lists, per
-order `p` and mode (`wc`, `opt`), one row per `ε`:
+Each search writes `<stem>.params.md` and `<stem>.params.json` into `plots/`. Two of the four
+are the provenance record of a published figure; the other two are the input the summary
+figure is assembled from, and have no figure of their own:
+
+| Search stem | What it is |
+|---|---|
+| `overhead_multi_cap` | provenance for Fig. 4 |
+| `gate_depth` | provenance for Fig. 5 |
+| `overhead` | input to the right panel of Fig. 2 |
+| `gate_depth_multi_cap` | input to the left panel of Fig. 2 |
+
+The Markdown table lists, per order `p` and mode (`wc`, `opt`), one row per `ε`:
 
 | ε | m | q_k | ‖b‖₁ | ‖b‖₁² | ‖b̃‖₁ |
 | - | - | --- | ---- | ----- | ----- |

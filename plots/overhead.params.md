@@ -1,6 +1,6 @@
 # Overhead figure parameters
 
-Companion data for `plots/overhead.png` (and `plots/overhead_cropped.png`).
+Search settings and per-ε schedules for the `overhead` search. README.md maps each search to the paper figure it feeds.
 
 ## Settings
 
