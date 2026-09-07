@@ -23,6 +23,7 @@ import richardson as rt
 from plotting.common_cli import (
     add_shared_grid_args,
     add_shared_search_args,
+    format_b2_cap,
     parse_orders,
     resolve_output_dir,
 )
@@ -36,6 +37,10 @@ PLOT_LW = 2.25
 ORDER_COLORS = {1: "#2563eb", 2: "#16a34a", 4: "#9333ea", 6: "#ea580c"}
 TROTTER_EXTRA_ORDER = 6
 Y_LABEL = "Gate depth"
+# Sample-overhead caps for the extra multi-cap sidecar consumed by the summary
+# figure (one "Best extrapolated" envelope per cap). 10 = "10 samples",
+# 100 = "100 samples".
+SUMMARY_B2_CAPS = [10.0, 100.0]
 
 
 def _analytic_trotter_gate_depth(errors: np.ndarray, p: int) -> np.ndarray:
@@ -267,6 +272,49 @@ def main() -> None:
     )
     print(f"  Saved {md_path}")
     print(f"  Saved {json_path}")
+
+    # Extra multi-cap gate-depth sidecar (one optimized schedule per cap plus
+    # WC) so the summary figure can draw a "Best extrapolated" envelope for each
+    # sample-overhead budget (10 and 100 samples). No PNG is produced here; the
+    # summary reads gate_depth_multi_cap.params.json directly.
+    b2_caps = sorted({b2_cap, *SUMMARY_B2_CAPS})
+    caps_label = ", ".join(format_b2_cap(c) for c in b2_caps)
+    print(f"\nMulti-cap gate depth: optimized caps = [{caps_label}]")
+    multi_results = cm.compute_multi_cap_results(
+        errors=errors,
+        orders=orders,
+        q_max=int(args.q_max),
+        q_min=int(args.q_min),
+        b2_caps=b2_caps,
+        brute_permutations=bool(args.brute_permutations),
+        brute_permutations_max_count=int(args.brute_permutations_max_count),
+        step_mode="gate_depth",
+        n_sys=n_sys,
+    )
+    multi_md, multi_json = cm.write_params_sidecar(
+        output_dir=output_dir,
+        stem="gate_depth_multi_cap",
+        title="Gate-depth multi-cap figure parameters",
+        settings={
+            "script": "plotting/plot_gate_depth.py",
+            "step_mode": "gate_depth",
+            "λ-mode": args.lambda_mode,
+            "orders (p) searched": ", ".join(str(p) for p in orders),
+            "ε grid": (
+                f"{args.eps_points} points, log10 in "
+                f"[{args.eps_log_min:.6g}, {args.eps_log_max:.6g}]"
+            ),
+            "q_min, q_max": f"{args.q_min}, {args.q_max}",
+            "‖b‖₁² search caps (optimized)": caps_label,
+            "brute permutations": str(bool(args.brute_permutations)),
+            "system size n (λ-comm)": str(n_sys),
+        },
+        errors=errors,
+        orders=orders,
+        results_by_order=multi_results,
+    )
+    print(f"  Saved {multi_md}")
+    print(f"  Saved {multi_json}")
 
 
 if __name__ == "__main__":
