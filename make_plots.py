@@ -1,16 +1,22 @@
-"""Regenerate every figure (and parameter sidecar) under ``plots/`` in one command.
+"""Regenerate the paper's figures (and their parameter sidecars) under ``plots/``.
 
 Usage::
 
-    python make_plots.py                        # overhead, gate depth, summary
-    python make_plots.py -- --eps-points 30     # forward extra flags to the search scripts
-    python make_plots.py --multi-cap-overhead   # also write overhead_multi_cap.png
-    python make_plots.py --all                  # + sanity checks + combined figure
-                                                #   (combined needs error_analysis/exact-error.pdf)
+    python make_plots.py                      # Figs. 2, 4, 5 of arXiv:2608.13862
+    python make_plots.py -- --eps-points 30   # forward extra flags to the two search scripts
 
-Extra arguments after ``--`` are forwarded to each search-driven plotting
-script (overhead and gate depth); the summary and the ``--all`` extras take no
-search flags.
+Runs, in order:
+
+    plotting/plot_overhead.py    -> plots/overhead_multi_cap.{png,pdf}   (Fig. 4)
+                                    + overhead.params.* and overhead_multi_cap.params.*
+    plotting/plot_gate_depth.py  -> plots/gate_depth.{png,pdf}           (Fig. 5)
+                                    + gate_depth.params.* and gate_depth_multi_cap.params.*
+    plotting/plot_summary.py     -> plots/summary.{png,pdf}              (Fig. 2)
+                                    assembled from the sidecars above
+
+Extra arguments after ``--`` are forwarded to the two search scripts only; the
+summary takes none. The exact-error figure (Fig. 6) lives in ``error_analysis/``
+and is added here once its script exists.
 """
 
 from __future__ import annotations
@@ -20,20 +26,15 @@ import sys
 from pathlib import Path
 
 _ROOT = Path(__file__).resolve().parent
-_SCRIPTS = [
-    _ROOT / "plotting" / "plot_overhead.py",
-    _ROOT / "plotting" / "plot_gate_depth.py",
-    # reads the two sidecars written above; must run last
-    _ROOT / "plotting" / "plot_summary.py",
+
+# (script, fixed arguments): the settings the paper's figures were made with.
+_STEPS: list[tuple[Path, list[str]]] = [
+    (_ROOT / "plotting" / "plot_overhead.py",
+     ["--brute-bnorm-sq-caps", "10,100,1000", "--no-cropped"]),
+    (_ROOT / "plotting" / "plot_gate_depth.py", ["--no-cropped"]),
+    # reads the sidecars written above; must run last
+    (_ROOT / "plotting" / "plot_summary.py", []),
 ]
-# Extra steps run only with ``--all``. They take no search flags, so the
-# forwarded ``--`` arguments are not passed to them.
-_EXTRA_SCRIPTS = [
-    _ROOT / "plotting" / "plot_sanity_checks.py",
-    _ROOT / "plotting" / "plot_combined_figure.py",
-]
-_EXACT_ERROR = _ROOT / "error_analysis" / "exact-error.pdf"
-_FLAGS = ("--multi-cap-overhead", "--all")
 
 
 def _extra_args(argv: list[str]) -> list[str]:
@@ -44,37 +45,16 @@ def _extra_args(argv: list[str]) -> list[str]:
 
 
 def main() -> int:
-    argv = [a for a in sys.argv[1:] if a not in _FLAGS]
-    multi_cap = "--multi-cap-overhead" in sys.argv[1:]
-    run_all = "--all" in sys.argv[1:]
-    extra = _extra_args(argv)
-
-    for script in _SCRIPTS:
+    extra = _extra_args(sys.argv[1:])
+    for script, fixed in _STEPS:
         print(f"\n=== Running {script.relative_to(_ROOT)} ===")
-        cmd = [sys.executable, str(script)]
+        cmd = [sys.executable, str(script), *fixed]
         if script.name != "plot_summary.py":
             cmd.extend(extra)
-        if script.name == "plot_overhead.py" and multi_cap:
-            cmd.extend(["--brute-bnorm-sq-caps", "10,100,1000"])
         rc = subprocess.call(cmd, cwd=_ROOT)
         if rc != 0:
             return rc
-
-    if run_all:
-        for script in _EXTRA_SCRIPTS:
-            if script.name == "plot_combined_figure.py" and not _EXACT_ERROR.is_file():
-                print(
-                    f"\n=== Skipping {script.relative_to(_ROOT)}: "
-                    f"{_EXACT_ERROR.relative_to(_ROOT)} not present "
-                    "(see error_analysis/README.md) ==="
-                )
-                continue
-            print(f"\n=== Running {script.relative_to(_ROOT)} ===")
-            rc = subprocess.call([sys.executable, str(script)], cwd=_ROOT)
-            if rc != 0:
-                return rc
-
-    print("\nAll plots regenerated in plots/.")
+    print("\nAll figures regenerated in plots/.")
     return 0
 
 

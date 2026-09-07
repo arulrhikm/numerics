@@ -4,10 +4,6 @@
 contributed by Samson Wang. This file records what that script must compute and where it
 must write its output, so that it drops into the existing pipeline without further changes.
 
-`Exact_extrapolation_error.ipynb` is the earlier **prototype**: an isotropic chain at `n = 4`,
-`J = 1`, `h = 0.5`, with the extrapolation schedules pasted in by hand. It is kept for
-reference only and does not reproduce the paper's figure.
-
 ## What Figure 6 shows (paper, Sec. "Empirical error")
 
 Anisotropic Heisenberg chain with open boundaries on `L = 8` qubits,
@@ -43,10 +39,9 @@ The paper does **not** state the noise rate or the seed; both must come with the
    integer `r`, plotted at `x = max_k q_k r`.
 
 2. **Output.** Write `error_analysis/exact-error.pdf` (and `.png`), two panels side by
-   side, clean on the left and noisy on the right. `plotting/plot_combined_figure.py`
-   lifts the panels out of that PDF by position, so keep that order.
+   side, clean on the left and noisy on the right.
 
 3. **Entry point.** A single `python error_analysis/exact_error.py` from the repo root,
    numpy/scipy/matplotlib only, with the model parameters, `t`, the Trotter-step window,
    the noise rate and the seed as module-level constants or CLI flags. Once it exists,
-   add it to the `--all` list in `make_plots.py`.
+   add it to `make_plots.py` so one command reproduces every figure.
