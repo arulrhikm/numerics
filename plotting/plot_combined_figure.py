@@ -14,7 +14,8 @@ n = 8) and has no savefig, and the random-Pauli-X noise model of panel (c)
 exists nowhere in code -- only as prose in paper.tex, which never states the
 noise rate. Replotting (c) would mean inventing numbers.
 
-REQUIRED INPUT: images/exact-error.pdf, copied out of the Overleaf project.
+REQUIRED INPUT: error_analysis/exact-error.pdf. Until the exact-error script
+lands (see error_analysis/README.md), copy the PDF out of the Overleaf project.
 
 Panels are placed at equal *plot-frame height*. Font size per unit frame height
 is scale-invariant and happens to agree closely between the two sources, so equal
@@ -63,9 +64,9 @@ MM = 72.0 / 25.4  # points per mm
 
 # Candidate locations for the one file this script cannot generate itself.
 EXACT_ERROR_CANDIDATES = [
-    _ROOT.parent / "images" / "exact-error.pdf",
+    _ROOT / "error_analysis" / "exact-error.pdf",
     _ROOT / "plots" / "exact-error.pdf",
-    _ROOT.parent / "images" / "exact_error.pdf",
+    _ROOT.parent / "poster" / "images" / "exact-error.pdf",
 ]
 GATE_DEPTH = _ROOT / "plots" / "gate_depth.pdf"
 OUT_STEM = _ROOT / "plots" / "combined-bounds-and-error"
@@ -81,10 +82,10 @@ def find_exact_error(override: str | None = None) -> Path:
         if p.is_file():
             return p
     raise SystemExit(
-        "exact-error.pdf not found. Copy it out of Overleaf to one of:\n  "
+        "exact-error.pdf not found. Expected at one of:\n  "
         + "\n  ".join(str(p) for p in EXACT_ERROR_CANDIDATES)
-        + "\n\nIt cannot be regenerated here: there is no exact-error script in this\n"
-          "repo, and the panel (c) noise model exists only as prose in paper.tex."
+        + "\n\nNo script in this repo produces it yet: error_analysis/README.md states\n"
+          "what the exact-error script must compute and where to write the PDF."
     )
 
 

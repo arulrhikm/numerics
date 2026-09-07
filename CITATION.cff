@@ -1,0 +1,28 @@
+cff-version: 1.2.0
+message: "If you use this code, please cite the paper below."
+title: "Numerics for: Resource-efficient quantum eigenvalue transform with commutator scaling"
+authors:
+  - family-names: Mazumder
+    given-names: Arul Rhik
+  - family-names: Watson
+    given-names: James D.
+  - family-names: Wang
+    given-names: Samson
+repository-code: "https://github.com/arulrhikm/numerics"
+license: MIT
+preferred-citation:
+  type: article
+  title: "Resource-efficient quantum eigenvalue transform with commutator scaling"
+  authors:
+    - family-names: Mazumder
+      given-names: Arul Rhik
+    - family-names: Watson
+      given-names: James D.
+    - family-names: Wang
+      given-names: Samson
+  year: 2026
+  journal: "arXiv preprint"
+  identifiers:
+    - type: other
+      value: "arXiv:2608.13862"
+  url: "https://arxiv.org/abs/2608.13862"

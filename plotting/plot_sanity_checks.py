@@ -1,6 +1,7 @@
 """Sanity checks for the extrapolation objective (Samson's list).
 
-Objective actually optimized (section.tex Eq. 139):
+Objective actually optimized (arXiv:2608.13862, Sec. `Numerical studies',
+Eq. (optimization-objective)):
 
     C(q) = (q_max/q_min) * lambda_scale^(1+1/p)
            * ( K * ||b^(p)||_1 / eps )^(1/(sigma(m-1)+p))

@@ -13,3 +13,4 @@ env/
 *.toc
 *.fdb_latexmk
 *.fls
+.cursor/

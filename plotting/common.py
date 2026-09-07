@@ -370,3 +370,57 @@ def write_params_sidecar(
     md_path.write_text("\n".join(out), encoding="utf-8")
     json_path.write_text(json.dumps(json_data, indent=2), encoding="utf-8")
     return md_path, json_path
+
+
+def load_sidecar_schedules(
+    sidecar: Path | str,
+    p: int,
+    *,
+    modes: tuple[str, ...] = ("wc", "opt"),
+    dedupe: bool = True,
+) -> list[dict]:
+    """Read the Richardson schedules the search picked for order ``p`` from a
+    ``<fig>.params.json`` sidecar (e.g. ``plots/overhead.params.json``).
+
+    This is the hand-off point for downstream studies that import the
+    schedules "blind" (the exact-error figure): read them here instead of
+    pasting the arrays. Each returned entry is
+
+        {"mode": "wc" | "opt", "eps": float, "m": int,
+         "q_grid": [int, ...], "b": [float, ...], "bnorm1": float, "bnorm_sq": float}
+
+    ordered by ``eps`` descending within each mode. With ``dedupe`` (default)
+    a schedule that the search picked at several ``eps`` values appears once,
+    at the largest ``eps`` that selected it.
+    """
+    with open(sidecar, encoding="utf-8") as fh:
+        data = json.load(fh)
+    eps = [float(e) for e in data["epsilon"]]
+    try:
+        by_mode = data["results"][str(int(p))]
+    except KeyError as exc:
+        raise KeyError(f"order p={p} not in {sidecar}; have {list(data['results'])}") from exc
+
+    out: list[dict] = []
+    for mode in modes:
+        if mode not in by_mode:
+            continue
+        r = by_mode[mode]
+        seen: set[tuple] = set()
+        for i, e in enumerate(eps):
+            q_grid = [int(q) for q in r["q_grids"][i]]
+            key = (mode, tuple(q_grid))
+            if dedupe and key in seen:
+                continue
+            seen.add(key)
+            out.append({
+                "mode": mode,
+                "eps": e,
+                "m": int(r["m"][i]),
+                "q_grid": q_grid,
+                "b": [float(b) for b in r["b_coeffs"][i]],
+                "bnorm1": float(r["bnorm1"][i]),
+                "bnorm_sq": float(r["bnorm1_sq"][i]),
+            })
+    return out
+

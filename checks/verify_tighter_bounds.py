@@ -1,6 +1,7 @@
 """Numerical checks for the diagonal-restriction derivation.
 
-Verifies the computable claims of `notes/derivation-tighter-bounds.tex`:
+Verifies the computable claims of the diagonal-restriction derivation
+(`../notes/derivation/derivation-tighter-bounds.tex` in the working tree):
 
   1. `ratio_recall_sup`   — the supremum `R_p` of Eq. (lcomm-tight-recall) and the
      gate-depth ratio `R_p^(1+1/p)` of Eq. (ratio-recall), reconciled against the
@@ -16,7 +17,7 @@ Verifies the computable claims of `notes/derivation-tighter-bounds.tex`:
      the finitely-many-orders section, for `n = 100` and `eps` down to `1e-6`.
   4. `collapse_check`     — the row-(b) collapse condition (eq:collapse-condition).
 
-numpy only. Run: python verify_tighter_bounds.py
+numpy only. Run (from the repo root): python checks/verify_tighter_bounds.py
 (`python`, not `python3`, on Windows.)
 """
 
@@ -26,6 +27,13 @@ import itertools
 import math
 
 import numpy as np
+
+import sys
+from pathlib import Path
+
+_ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
 
 import richardson as rt
 

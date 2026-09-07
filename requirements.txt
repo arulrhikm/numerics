@@ -1,2 +1,4 @@
 numpy>=1.24
 matplotlib>=3.7
+scipy>=1.10      # error_analysis/ (sparse expm)
+pymupdf>=1.23    # plotting/plot_combined_figure.py (import fitz)

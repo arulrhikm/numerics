@@ -7,12 +7,19 @@ weights. Same b for every even-p application (p=2 and p=4 share one matrix).
 Optimized extrapolation is application-specific: Vandermonde rows use the
 leading error powers of order-p Suzuki formulas (p, p+sigma, p+2sigma, ...).
 
-Run: python check_bnorms_wellconditioned.py
+Run (from the repo root): python checks/check_bnorms_wellconditioned.py
 """
 
 from __future__ import annotations
 
 import numpy as np
+
+import sys
+from pathlib import Path
+
+_ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
 
 import richardson as rt
 
