@@ -106,7 +106,10 @@ Checked against [arXiv:2608.13862](https://arxiv.org/abs/2608.13862) on 2026-09-
 | Fig. 2(b) | Made by the notebook, not `plot_summary.py`; the committed `summary.pdf` has a different right panel |
 | Fig. 6 | Yes, from `error_analysis/fig6_schedules.json`; the search run that chose its brute-force grids is not in the repository |
 
-Two known differences:
+Known differences between the paper text (arXiv v1) and the code that made its figures. Items 2–6
+concern the bound figures (2(a), 4, 5). The code is deliberately left as it is for all of them,
+because changing it would visibly change the published figures. None of them moves the ε ≈ 10⁻²
+crossover in Figs. 2(a) and 5.
 
 1. The committed search does not reproduce the brute-force grids in Fig. 6. The five `wc`
    schedules are the LKW closed form at `m = 2, 3, 4, 5, 7`, and `richardson.py` reproduces every
@@ -115,7 +118,34 @@ Two known differences:
    come from an earlier run. `error_analysis/fig6_schedules.json` records them as used.
 2. The paper and the code use different `q_max`. The paper gives the brute-force domain as
    `q_k ∈ [1, 10]`, but every committed sidecar records `q_min, q_max = 1, 15` and has grids that
-   reach 15. The published Figs. 4 and 5 match the `q_max = 15` output.
+   reach 15. The published Figs. 4 and 5 match the `q_max = 15` output. A rerun with
+   `--q-max 10` raises the brute-force curves by up to 1.68× at `p = 1` and up to 10% at
+   `p = 2, 4`, and leaves the cap-10 crossover of Figs. 2(a)/5 at ε ≈ 1.02 × 10⁻².
+   The LKW grids are not bounded by `q_max` and reach `q = 83`.
+3. Fig. 5 and the lower envelope of Fig. 2(a) use the `‖b‖₁² ≤ 100` cap. The paper text and the
+   Fig. 5 caption say 10, and the Fig. 2(a) caption says "factor 10" although the panel draws both
+   caps. The cap-10 schedules are in `plots/gate_depth_multi_cap.params.json`; with them the
+   Fig. 5 crossover moves from ε ≈ 1.79 × 10⁻² to 1.02 × 10⁻².
+4. The λ_comm constant at `p = 1` and `p = 4`. `LEMMA57_GEOMETRIC_RATIO_BY_P` stores
+   `{1: 1.5035, 2: 1.0968, 4: 1.0445}`, and the step formulas raise it to `1 + 1/p`. At `p = 2`
+   that is the bare Lemma 52 ratio, so the result is the paper's 1.1487. At `p = 1` and `p = 4` the
+   stored values are already raised (paper Eq. 254), so the code uses 2.2605 and 1.0559 where the
+   paper says 1.5035 and 1.0445. The bare ratios are 1.2262 and 1.0354, and
+   `richardson.lemma57_geometric_ratio(p)` returns them. The published extrapolated curves are
+   therefore 1.50× too high at `p = 1` and 1.1% too high at `p = 4`, which is conservative against
+   extrapolation. The best-extrapolated envelope changes only at the three largest ε.
+5. Gate depth. The paper's gate-depth formula (Eqs. 239–240) carries the stage count as
+   `Υ^{2+1/p}`, but `compute_steps_gate_depth` uses `C_p^{1+1/p}`, the step-count scaling. Figs. 2(a)
+   and 5 follow the code: the `p = 6` Trotter line is ≈ 80 at ε = 1. Multiplying every curve by
+   its `C_p` (1, 2, 10, 50) leaves all crossovers unchanged, but it moves the curves and the
+   order at which Best Trotter switches.
+6. The prefactors `RICHARDSON_K_BY_P = {1: 2.7232, 2: 3.627, 4: 5.15485}` are fixed per order. The
+   paper describes `a(ε)` as refined for each target precision. The derivation of these values is
+   not in this repository.
+
+Also note that `--n-sys` has no effect on any plotted number: `n` cancels in every ratio, and
+`compute_lambda_scale` ignores it. "`n = 100` basis functions" labels the setting but does not
+change the curves.
 
 To check a fresh run against the committed sidecars:
 

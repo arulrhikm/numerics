@@ -6,7 +6,7 @@ Public API consumed by the plotting scripts:
   per target precision.
 * ``get_richardson_coefficients``: p-specific Vandermonde (optimized search).
 * ``get_wc_richardson_coefficients``: even-power WC Vandermonde (closed form).
-* ``b_norm1`` / ``b_suppressed_norm``: coefficient norms (`‖b̃‖₁` per Eqs. 220--223).
+* ``b_norm1`` / ``b_suppressed_norm``: coefficient norms (`‖b̃‖₁`, arXiv:2608.13862v1 Eqs. 242--244).
 * ``compute_lambda_scale``: λ-comm ratio (``lemma57_fixed`` / ``legacy``).
 * ``compute_steps_plane_wave`` / ``compute_steps_gate_depth``: step counts.
 * ``gate_overhead``: ``C_p`` (Suzuki exponentials per Trotter step).
@@ -35,7 +35,12 @@ RICHARDSON_K_DEFAULT: float = (4.0 / 3.0) * (math.e - 1.0)
 # pass an explicit cap via ``--brute-bnorm-sq-max`` instead.
 BRUTE_FORCE_B_NORM1_SQ_MAX_DEFAULT: float = 1e6
 
-# Pre-tabulated Lemma 57 geometric ratios for the orders we evaluate often.
+# Pre-tabulated λ_comm geometric ratios (Lemma 52 of arXiv:2608.13862v1; the
+# "lemma57" names are historical). NOTE: the p = 1 and p = 4 entries are the
+# ratios already raised to 1 + 1/p (paper Eq. 254: 1.5035, 1.0445), but
+# ``compute_steps_*`` raise them to 1 + 1/p again; only p = 2 holds the bare
+# ratio. The published figures were made with these values, so they are kept
+# as-is; see README.md, "Known differences".
 LEMMA57_GEOMETRIC_RATIO_BY_P: dict[int, float] = {
     1: 1.5035,
     2: 1.0968,
@@ -80,7 +85,7 @@ def b_norm1(b) -> float:
 
 
 def q_refinement_ratio(q_integers) -> float:
-    """Factor ``q_max / q_min`` on Richardson Trotter step counts (Eqs. 124, 140)."""
+    """Factor ``q_max / q_min`` on Richardson Trotter step counts (arXiv v1 Eqs. 255, 256)."""
     q = np.asarray(q_integers, dtype=float)
     q_min = float(np.min(q))
     if q_min <= 0:
@@ -96,7 +101,7 @@ def b_suppressed_norm(
     *,
     well_conditioned: bool = False,
 ) -> float:
-    """Norm ``Σ |b̃_i|`` with ``b̃_i = b_i (q_min / q_i)^e`` (section.tex Eq. 48).
+    """Norm ``Σ |b̃_i|`` with ``b̃_i = b_i (q_min / q_i)^e`` (arXiv v1 Eq. 244).
 
     The reference point is ``q_1 = q_min`` (largest step ``s_1``), so the ratio
     ``q_min / q_i ≤ 1`` and the suppressed norm is *smaller* than ``‖b‖₁``. This
@@ -184,7 +189,7 @@ def get_wc_richardson_coefficients_closed_form(s_list) -> np.ndarray:
 
     For nodes ``t_k = s_k²`` the unique degree-``m−1`` polynomial with
     ``P(0) = 1`` and ``P(t_k) = 0`` for ``k ≥ 2`` in the moment system gives
-    ``b_k = ∏_{j≠k} (−t_j) / (t_k − t_j)`` (Eq. 62 in the Trotter-mitigation note).
+    ``b_k = ∏_{j≠k} (−t_j) / (t_k − t_j)`` (the LKW well-conditioned schedule of Low, Kliuchnikov and Wiebe 2019).
     """
     s = np.asarray(s_list, dtype=float)
     t = s * s
@@ -227,7 +232,7 @@ def wc_extrapolation_valid_for_p(p: int) -> bool:
 
 
 def lemma57_geometric_ratio(p: int, num_points: int = 20000) -> float:
-    """``sup_{0 < k ≤ 1/p} ( e/(p+1)² · (1/k − p) )^k`` (corrected Lemma 57 ratio)."""
+    """``sup_{0 < k ≤ 1/p} ( e/(p+1)² · (1/k − p) )^k`` (the bare Lemma 52 ratio, arXiv v1)."""
     p = int(p)
     if p <= 0:
         return 1.0
@@ -245,7 +250,7 @@ def lemma57_geometric_ratio(p: int, num_points: int = 20000) -> float:
 
 
 def _legacy_lambda_scale(m: int, p: int, num_points: int) -> float:
-    """Pre-Lemma-57 (``legacy``) m-dependent supremum, capped at 1.764."""
+    """Pre-Lemma-52 (``legacy``) m-dependent supremum, capped at 1.764."""
     sigma = sigma_parity(p)
     denom = sigma * int(m)
     if denom <= 0:

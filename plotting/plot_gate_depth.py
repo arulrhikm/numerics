@@ -94,7 +94,9 @@ def parse_args():
         "--n-sys",
         type=int,
         default=100,
-        help="System size n passed to compute_steps_gate_depth (default 100).",
+        help="System size n passed to compute_steps_gate_depth (default 100). "
+        "It has no effect on the plotted numbers: n cancels in every Trotter vs "
+        "extrapolated ratio, and compute_lambda_scale ignores it.",
     )
     parser.add_argument(
         "--no-cropped",

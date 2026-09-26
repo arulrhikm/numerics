@@ -44,9 +44,11 @@ CBAR_VMAX = 1000.0
 CBAR_LABEL = r"$\|\mathbf{b}\|_1^2$  (sample overhead factor)"
 # Sample-overhead budgets drawn as separate "Best extrapolated" envelopes in the
 # left panel: the published 100-sample line plus the tighter 10-sample line.
-# Both crossovers with the Trotter baseline land above ε = 1e-2.
+# Both crossovers with the Trotter baseline land above ε = 1e-2, the cap-10 one
+# only just: the last ε grid point where extrapolation wins is 1.02e-2 (cap 10)
+# and 1.79e-2 (cap 100).
 SUMMARY_CAPS = [100.0, 10.0]
-# ε decades shown on both panels (matches the sidecar grid, 10^-6 … 10^0).
+# ε decades shown on both panels (the sidecar grid runs 10^-6 … 0.9).
 # Every OTHER decade. At poster font size (FS=20) all seven decade labels
 # collide into an unreadable smear; four are enough to read the axis.
 SUMMARY_EPS_XTICKS = [10.0 ** e for e in range(-6, 1, 2)]

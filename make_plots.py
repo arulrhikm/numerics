@@ -52,14 +52,17 @@ def _extra_args(argv: list[str]) -> list[str]:
 def main() -> int:
     extra = _extra_args(sys.argv[1:])
     for script, fixed in _STEPS:
-        print(f"\n=== Running {script.relative_to(_ROOT)} ===")
+        print(f"\n=== Running {script.relative_to(_ROOT)} ===", flush=True)
         # plot_summary.py uses parse_known_args, so forwarding the search flags
         # to it is harmless and is what carries --out-dir through to the summary.
         cmd = [sys.executable, str(script), *fixed, *extra]
         rc = subprocess.call(cmd, cwd=_ROOT)
         if rc != 0:
             return rc
-    print("\nAll figures regenerated in plots/.")
+    out_dir = "plots/"
+    if "--out-dir" in extra and extra.index("--out-dir") + 1 < len(extra):
+        out_dir = extra[extra.index("--out-dir") + 1]
+    print(f"\nAll figures regenerated in {out_dir}.")
     return 0
 
 
