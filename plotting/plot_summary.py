@@ -1,11 +1,11 @@
 """Side-by-side square summary figure assembled from the two committed sidecars.
 
-Left panel  : the gate-depth envelope -- gray "Best Trotter" plus two
+Left panel  : the gate-depth envelope: gray "Best Trotter" plus two
               "Best extrapolated" envelopes (‖b‖₁² caps 10 and 100), each
               point a filled triangle colored by sample overhead ``‖b‖₁²``.
               Cap budgets are distinguished by the shared colorbar, not by
               open vs filled markers.
-Right panel : the p = 2 overhead panel -- Trotter baseline plus LKW (squares)
+Right panel : the p = 2 overhead panel: Trotter baseline plus LKW (squares)
               and brute-force (triangles) schedules, also colored by ``‖b‖₁²``.
 
 Both panels share the sample-overhead colorbar on the right.

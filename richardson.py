@@ -2,16 +2,16 @@
 
 Public API consumed by the plotting scripts:
 
-* ``compute_min_samples`` — search Richardson grids and pick the best schedule
+* ``compute_min_samples``: search Richardson grids and pick the best schedule
   per target precision.
-* ``get_richardson_coefficients`` — p-specific Vandermonde (optimized search).
-* ``get_wc_richardson_coefficients`` — even-power WC Vandermonde (closed form).
-* ``b_norm1`` / ``b_suppressed_norm`` — coefficient norms (`‖b̃‖₁` per Eqs. 220--223).
-* ``compute_lambda_scale`` — λ-comm ratio (``lemma57_fixed`` / ``legacy``).
-* ``compute_steps_plane_wave`` / ``compute_steps_gate_depth`` — step counts.
-* ``gate_overhead`` — ``C_p`` (Suzuki exponentials per Trotter step).
-* ``richardson_b_over_eps_prefactor`` — ``K`` in ``(K ‖b‖₁ / ε)^(1/(σ(m-1)+p))``.
-* ``set_lambda_scale_mode`` — toggle the λ-comm model.
+* ``get_richardson_coefficients``: p-specific Vandermonde (optimized search).
+* ``get_wc_richardson_coefficients``: even-power WC Vandermonde (closed form).
+* ``b_norm1`` / ``b_suppressed_norm``: coefficient norms (`‖b̃‖₁` per Eqs. 220--223).
+* ``compute_lambda_scale``: λ-comm ratio (``lemma57_fixed`` / ``legacy``).
+* ``compute_steps_plane_wave`` / ``compute_steps_gate_depth``: step counts.
+* ``gate_overhead``: ``C_p`` (Suzuki exponentials per Trotter step).
+* ``richardson_b_over_eps_prefactor``: ``K`` in ``(K ‖b‖₁ / ε)^(1/(σ(m-1)+p))``.
+* ``set_lambda_scale_mode``: toggle the λ-comm model.
 """
 
 from __future__ import annotations
@@ -99,8 +99,8 @@ def b_suppressed_norm(
     """Norm ``Σ |b̃_i|`` with ``b̃_i = b_i (q_min / q_i)^e`` (section.tex Eq. 48).
 
     The reference point is ``q_1 = q_min`` (largest step ``s_1``), so the ratio
-    ``q_min / q_i ≤ 1`` and the suppressed norm is *smaller* than ``‖b‖₁`` — the
-    refinement of the error-series remainder amplification. ``e = 1`` on
+    ``q_min / q_i ≤ 1`` and the suppressed norm is *smaller* than ``‖b‖₁``. This
+    refines the amplification of the error-series remainder. ``e = 1`` on
     well-conditioned grids (``‖b^(1)‖``); ``e = p`` on brute-force optimized
     grids (``‖b^(p)‖``).
     """
@@ -167,8 +167,8 @@ def setup_wc_vandermonde_matrix(s_list, m: int) -> np.ndarray:
     """Well-conditioned (LKW) Vandermonde: row ``j`` has exponent ``2j``.
 
     Prescriptive even error series starting at ``s²``; cancels ``s², s⁴, …, s^{2(m−1)}``
-    so the leading remainder is ``s^{2m}``. Independent of Trotter order ``p`` — use
-    only when the underlying error series is even (``p ∈ {2, 4, …}``).
+    so the leading remainder is ``s^{2m}``. Independent of Trotter order ``p``, so use
+    it only when the underlying error series is even (``p ∈ {2, 4, …}``).
     """
     m = int(m)
     V = np.zeros((m, m))
