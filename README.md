@@ -15,10 +15,15 @@ number in the paper traces back to a search setting.
 
 | Paper figure | File in `plots/` | Produced by |
 |---|---|---|
-| Fig. 2, summary of numerical results | `summary.pdf` | `plotting/plot_summary.py`, from the sidecars below |
+| Fig. 2(a), gate-depth envelope | `summary.pdf`, left panel | `plotting/plot_summary.py`, from the sidecars below |
+| Fig. 2(b), empirical error | not regenerated here, see below | `error_analysis/empirical_extrapolation_error.ipynb` |
 | Fig. 4, bounds on Trotter step number | `overhead_multi_cap.pdf` | `plotting/plot_overhead.py --brute-bnorm-sq-caps 10,100,1000` |
 | Fig. 5, bounds on gate depth | `gate_depth.pdf` | `plotting/plot_gate_depth.py` |
-| Fig. 6, exact error, 8-qubit Heisenberg chain | `error_analysis/exact-error.pdf` | **pending**, see `error_analysis/README.md` |
+| Fig. 6, exact error, 8-qubit Heisenberg chain | inline in the notebook | `error_analysis/empirical_extrapolation_error.ipynb` (run all cells) |
+
+**`plots/summary.pdf` is not the published Figure 2.** Its left panel matches Fig. 2(a), but its
+right panel is the `p = 2` step-bound panel, whereas the published Fig. 2(b) is the empirical-error
+panel from the notebook. See *Reproducibility status* below.
 
 The tag `figures-arxiv-v1` marks the script versions that produced the figures in the arXiv
 submission.
@@ -29,6 +34,10 @@ submission.
 python -m pip install -r requirements.txt
 python make_plots.py            # Figs. 2, 4, 5 and their sidecars
 ```
+
+Figure 6 is a notebook: open `error_analysis/empirical_extrapolation_error.ipynb` and run all
+cells (a few minutes; needs `jupyter`, which is not in `requirements.txt`). Its outputs are
+committed with the notebook, so the figure can be read without running it.
 
 The brute-force search at the paper's settings (`q_max = 15`, three caps, 50 precisions)
 takes tens of minutes and a few gigabytes of memory on a laptop. The search is deterministic:
@@ -58,8 +67,10 @@ plotting/
   plot_gate_depth.py     -> plots/gate_depth.{png,pdf} + sidecars           (Fig. 5)
   plot_summary.py        -> plots/summary.{png,pdf}, assembled from sidecars (Fig. 2)
 plots/                   The three figures and four parameter sidecars (committed).
-error_analysis/          Exact-error study (Fig. 6): README.md states the contract for the
-                         script that produces it.
+error_analysis/          Exact-error study (Fig. 6): empirical_extrapolation_error.ipynb,
+                         fig6_schedules.json (the schedules it plots, with provenance)
+                         and README.md describing the model and the known gaps.
+verify_reproduction.py   Compares a regenerated run against the committed sidecars.
 requirements.txt, LICENSE (MIT), CITATION.cff
 ```
 
@@ -84,8 +95,40 @@ the committed sidecars so they match the published figures exactly.
 
 **Exact error (Fig. 6).** Operator-norm error of second-order Trotter and of the extrapolated
 operators built from the `p = 2` schedules above, on an 8-qubit anisotropic Heisenberg chain,
-with and without a random single-qubit `X`-rotation noise layer. The script is being added;
-`error_analysis/README.md` specifies inputs, model and output.
+with and without a random single-qubit `X`-rotation noise layer. This is a classical simulation
+of algorithmic error. It lives in a notebook rather than the `make_plots.py` pipeline;
+`error_analysis/README.md` gives the model, the cell map and the known gaps.
+
+## Reproducibility status
+
+Checked against [arXiv:2608.13862](https://arxiv.org/abs/2608.13862) on 2026-09-24.
+
+| Paper figure | Reproduced by this repository? |
+|---|---|
+| Fig. 4 | Yes, `plotting/plot_overhead.py` output matches the published panels |
+| Fig. 5 | Yes, `plotting/plot_gate_depth.py` output matches the published panels |
+| Fig. 2(a) | Yes, left panel of `plot_summary.py` |
+| Fig. 2(b) | Produced by the notebook, not by `plot_summary.py`; the committed `summary.pdf` pairs Fig. 2(a) with a different right panel |
+| Fig. 6 | Yes from `error_analysis/fig6_schedules.json`; the search run that *selected* its brute-force grids is not in the repository |
+
+Two open points, both recorded so a reader does not have to rediscover them:
+
+1. **The brute-force grids behind Fig. 6 are not reproduced by the committed search.** The five `wc`
+   schedules are the LKW closed form at `m = 2, 3, 4, 5, 7`, and every coefficient vector `b` in the
+   figure is reproduced exactly from its grid by `richardson.py`. The eight `opt` grids, however,
+   appear in no committed sidecar and are not returned by the search at either `q_max = 10` or
+   `q_max = 15`, so they come from an earlier search run. They are recorded verbatim in
+   `error_analysis/fig6_schedules.json`.
+2. **`q_max` differs between paper and code.** The paper states the brute-force domain is
+   `q_k ∈ [1, 10]`; every committed sidecar records `q_min, q_max = 1, 15` and contains grids that
+   reach 15. Figures 4 and 5 as published match the committed `q_max = 15` output.
+
+To check a fresh run against the committed sidecars:
+
+```bash
+python make_plots.py -- --out-dir _verify     # tens of minutes, a few GB
+python verify_reproduction.py _verify         # or --settings-only for a quick look
+```
 
 ## Parameter sidecars
 

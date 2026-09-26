@@ -6,8 +6,9 @@ venv/
 env/
 .DS_Store
 
-# Scratch output dir used by the reduced-grid smoke test in README.md
+# Scratch output dirs: the reduced-grid smoke test and the verification run
 _scratch/
+_verify/
 
 # plot_overhead.py always emits a single-cap figure; the paper uses the
 # multi-cap one. The cropped variants are caption-free duplicates.

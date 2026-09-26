@@ -1,0 +1,257 @@
+{
+  "title": "Schedules plotted in Figure 6 (exact-error study)",
+  "source": "extracted verbatim from error_analysis/empirical_extrapolation_error.ipynb",
+  "p": 2,
+  "note": "Every b vector here was checked against richardson.py: given the q grid, the repo reproduces the coefficients exactly (rtol 1e-6). The five wc grids are the LKW closed form at m = 2, 3, 4, 5, 7. The eight opt grids are not produced by the committed brute-force search at either q_max=10 or q_max=15, so the search run that selected them is not in this repository; they are recorded here so Figure 6 remains reproducible while that provenance is resolved.",
+  "schedules": [
+    {
+      "mode": "wc",
+      "label": "wc q=[10,4]",
+      "m": 2,
+      "q_grid": [
+        10,
+        4
+      ],
+      "b": [
+        1.1904761904761905,
+        -0.19047619047619052
+      ],
+      "bnorm_sq": 1.907,
+      "provenance": "LKW closed form at m=2 (richardson.get_sample_points); coefficients b reproduced exactly from the grid by richardson.get_wc_richardson_coefficients."
+    },
+    {
+      "mode": "opt",
+      "label": "opt q=[3, 6, 7]",
+      "m": 3,
+      "q_grid": [
+        3,
+        6,
+        7
+      ],
+      "b": [
+        0.07499999999999973,
+        -3.6923076923076867,
+        4.617307692307687
+      ],
+      "bnorm_sq": 70.3,
+      "provenance": "brute-force search output. The grid is NOT produced by the committed search at q_max=10 or q_max=15; its coefficients b ARE reproduced exactly from the grid by richardson.get_richardson_coefficients."
+    },
+    {
+      "mode": "opt",
+      "label": "opt q=[1, 3, 4, 5]",
+      "m": 4,
+      "q_grid": [
+        1,
+        3,
+        4,
+        5
+      ],
+      "b": [
+        -0.00034722222222161037,
+        0.8136160714284095,
+        -4.334391534391033,
+        4.521122685184845
+      ],
+      "bnorm_sq": 93.5,
+      "provenance": "brute-force search output. The grid is NOT produced by the committed search at q_max=10 or q_max=15; its coefficients b ARE reproduced exactly from the grid by richardson.get_richardson_coefficients."
+    },
+    {
+      "mode": "opt",
+      "label": "opt q=[2, 4, 5, 8, 10]",
+      "m": 5,
+      "q_grid": [
+        2,
+        4,
+        5,
+        8,
+        10
+      ],
+      "b": [
+        0.00017636684303445893,
+        -0.15049970605546648,
+        0.706597928820781,
+        -4.149161126940397,
+        4.592886537332048
+      ],
+      "bnorm_sq": 92.15,
+      "provenance": "brute-force search output. The grid is NOT produced by the committed search at q_max=10 or q_max=15; its coefficients b ARE reproduced exactly from the grid by richardson.get_richardson_coefficients."
+    },
+    {
+      "mode": "opt",
+      "label": "opt q=[1, 3, 4, 5, 7, 10]",
+      "m": 6,
+      "q_grid": [
+        1,
+        3,
+        4,
+        5,
+        7,
+        10
+      ],
+      "b": [
+        -7.306864964126691e-08,
+        0.018105192797205082,
+        -0.400290127254635,
+        1.5698342656318167,
+        -3.6423679322073284,
+        3.454718674101591
+      ],
+      "bnorm_sq": 82.54,
+      "provenance": "brute-force search output. The grid is NOT produced by the committed search at q_max=10 or q_max=15; its coefficients b ARE reproduced exactly from the grid by richardson.get_richardson_coefficients."
+    },
+    {
+      "mode": "wc",
+      "label": "wc q=[21, 8, 5]",
+      "m": 3,
+      "q_grid": [
+        21,
+        8,
+        5
+      ],
+      "b": [
+        1.240059426647623,
+        -0.2785826021900292,
+        0.0385231755424063
+      ],
+      "bnorm_sq": 2.425,
+      "provenance": "LKW closed form at m=3 (richardson.get_sample_points); coefficients b reproduced exactly from the grid by richardson.get_wc_richardson_coefficients."
+    },
+    {
+      "mode": "wc",
+      "label": "wc q=[37, 13, 8, 6]",
+      "m": 4,
+      "q_grid": [
+        37,
+        13,
+        8,
+        6
+      ],
+      "b": [
+        1.229103448754909,
+        -0.288030134860962,
+        0.06832538379336414,
+        -0.009398697687311205
+      ],
+      "bnorm_sq": 2.544,
+      "provenance": "LKW closed form at m=4 (richardson.get_sample_points); coefficients b reproduced exactly from the grid by richardson.get_wc_richardson_coefficients."
+    },
+    {
+      "mode": "wc",
+      "label": "wc q=[58, 20, 12, 9, 7]",
+      "m": 5,
+      "q_grid": [
+        58,
+        20,
+        12,
+        9,
+        7
+      ],
+      "b": [
+        1.2329216023270066,
+        -0.3013172541768565,
+        0.08715453229346652,
+        -0.02038862705718869,
+        0.0016297466135721252
+      ],
+      "bnorm_sq": 2.701,
+      "provenance": "LKW closed form at m=5 (richardson.get_sample_points); coefficients b reproduced exactly from the grid by richardson.get_wc_richardson_coefficients."
+    },
+    {
+      "mode": "wc",
+      "label": "wc q=[113, 38, 23, 17, 14, 11, 10]",
+      "m": 7,
+      "q_grid": [
+        113,
+        38,
+        23,
+        17,
+        14,
+        11,
+        10
+      ],
+      "b": [
+        1.243666681033084,
+        -0.34134077654872713,
+        0.1398809553753111,
+        -0.0570328679198038,
+        0.016204037842288493,
+        -0.0017373227945217385,
+        0.0003592930123689414
+      ],
+      "bnorm_sq": 3.241,
+      "provenance": "LKW closed form at m=7 (richardson.get_sample_points); coefficients b reproduced exactly from the grid by richardson.get_wc_richardson_coefficients."
+    },
+    {
+      "mode": "opt",
+      "label": "wc q=[5,8]",
+      "m": 2,
+      "q_grid": [
+        5,
+        8
+      ],
+      "b": [
+        -0.6410256410256407,
+        1.6410256410256407
+      ],
+      "bnorm_sq": 5.208,
+      "provenance": "brute-force search output. The grid is NOT produced by the committed search at q_max=10 or q_max=15; its coefficients b ARE reproduced exactly from the grid by richardson.get_richardson_coefficients."
+    },
+    {
+      "mode": "opt",
+      "label": "wc q=[2, 4, 6]",
+      "m": 3,
+      "q_grid": [
+        2,
+        4,
+        6
+      ],
+      "b": [
+        0.0416666666666663,
+        -1.0666666666666653,
+        2.024999999999999
+      ],
+      "bnorm_sq": 9.818,
+      "provenance": "brute-force search output. The grid is NOT produced by the committed search at q_max=10 or q_max=15; its coefficients b ARE reproduced exactly from the grid by richardson.get_richardson_coefficients."
+    },
+    {
+      "mode": "opt",
+      "label": "wc q=[1, 3, 5, 8]",
+      "m": 4,
+      "q_grid": [
+        1,
+        3,
+        5,
+        8
+      ],
+      "b": [
+        -8.267195767197588e-05,
+        0.10355113636363045,
+        -1.0433360042734787,
+        1.9398675398675203
+      ],
+      "bnorm_sq": 9.529,
+      "provenance": "brute-force search output. The grid is NOT produced by the committed search at q_max=10 or q_max=15; its coefficients b ARE reproduced exactly from the grid by richardson.get_richardson_coefficients."
+    },
+    {
+      "mode": "opt",
+      "label": "wc q=[1, 2, 3, 5, 9]",
+      "m": 5,
+      "q_grid": [
+        1,
+        2,
+        3,
+        5,
+        9
+      ],
+      "b": [
+        2.170138888883677e-05,
+        -0.010554524840220167,
+        0.14238281249986873,
+        -0.8650107178284865,
+        1.733160728779949
+      ],
+      "bnorm_sq": 7.569,
+      "provenance": "brute-force search output. The grid is NOT produced by the committed search at q_max=10 or q_max=15; its coefficients b ARE reproduced exactly from the grid by richardson.get_richardson_coefficients."
+    }
+  ]
+}

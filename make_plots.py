@@ -17,9 +17,11 @@ Runs, in order:
 Extra arguments after ``--`` are forwarded to all three scripts. The summary
 takes no search flags but does honour ``--out-dir``, and drops the rest via
 ``parse_known_args``, so a run with ``--out-dir`` stays inside that directory
-and leaves the committed figures alone. The exact-error figure (Fig. 6) lives in
-``error_analysis/``
-and is added here once its script exists.
+and leaves the committed figures alone.
+
+The exact-error figure (Fig. 6) is not produced here: it lives in the notebook
+``error_analysis/empirical_extrapolation_error.ipynb``, whose outputs are committed.
+See ``error_analysis/README.md``.
 """
 
 from __future__ import annotations

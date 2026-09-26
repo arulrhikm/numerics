@@ -393,8 +393,13 @@ def load_sidecar_schedules(
     schedules "blind" (the exact-error figure): read them here instead of
     pasting the arrays. Each returned entry is
 
-        {"mode": "wc" | "opt", "eps": float, "m": int,
+        {"mode": "wc" | "opt", "cap": float | None, "eps": float, "m": int,
          "q_grid": [int, ...], "b": [float, ...], "bnorm1": float, "bnorm_sq": float}
+
+    In a multi-cap sidecar (``*_multi_cap.params.json``) the brute-force
+    schedules are stored per ``‖b‖₁²`` cap; asking for mode ``"opt"`` returns
+    all of them, each tagged with the ``cap`` that produced it (``None`` for a
+    single-cap sidecar).
 
     ordered by ``eps`` descending within each mode. With ``dedupe`` (default)
     a schedule that the search picked at several ``eps`` values appears once,
@@ -410,24 +415,33 @@ def load_sidecar_schedules(
 
     out: list[dict] = []
     for mode in modes:
-        if mode not in by_mode:
+        # The multi-cap searches store one block per ‖b‖₁² cap under
+        # "opt_by_cap" instead of a single "opt" block; flatten those so both
+        # sidecar shapes answer the same call. Entries carry "cap".
+        if mode == "opt" and "opt" not in by_mode and "opt_by_cap" in by_mode:
+            blocks = [(float(cap), r) for cap, r in sorted(
+                by_mode["opt_by_cap"].items(), key=lambda kv: float(kv[0]))]
+        elif mode in by_mode:
+            blocks = [(None, by_mode[mode])]
+        else:
             continue
-        r = by_mode[mode]
-        seen: set[tuple] = set()
-        for i, e in enumerate(eps):
-            q_grid = [int(q) for q in r["q_grids"][i]]
-            key = (mode, tuple(q_grid))
-            if dedupe and key in seen:
-                continue
-            seen.add(key)
-            out.append({
-                "mode": mode,
-                "eps": e,
-                "m": int(r["m"][i]),
-                "q_grid": q_grid,
-                "b": [float(b) for b in r["b_coeffs"][i]],
-                "bnorm1": float(r["bnorm1"][i]),
-                "bnorm_sq": float(r["bnorm1_sq"][i]),
-            })
+        for cap, r in blocks:
+            seen: set[tuple] = set()
+            for i, e in enumerate(eps):
+                q_grid = [int(q) for q in r["q_grids"][i]]
+                key = (mode, tuple(q_grid))
+                if dedupe and key in seen:
+                    continue
+                seen.add(key)
+                out.append({
+                    "mode": mode,
+                    "cap": cap,
+                    "eps": e,
+                    "m": int(r["m"][i]),
+                    "q_grid": q_grid,
+                    "b": [float(b) for b in r["b_coeffs"][i]],
+                    "bnorm1": float(r["bnorm1"][i]),
+                    "bnorm_sq": float(r["bnorm1_sq"][i]),
+                })
     return out
 
