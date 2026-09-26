@@ -69,7 +69,7 @@ plotting/
 plots/                   The three figures and four parameter sidecars (committed).
 error_analysis/          Exact-error study (Fig. 6): empirical_extrapolation_error.ipynb,
                          fig6_schedules.json (the schedules it plots, with provenance)
-                         and README.md describing the model and the known gaps.
+                         and README.md describing the model and the notebook layout.
 verify_reproduction.py   Compares a regenerated run against the committed sidecars.
 requirements.txt, LICENSE (MIT), CITATION.cff
 ```
@@ -97,7 +97,7 @@ the committed sidecars so they match the published figures exactly.
 operators built from the `p = 2` schedules above, on an 8-qubit anisotropic Heisenberg chain,
 with and without a random single-qubit `X`-rotation noise layer. This is a classical simulation
 of algorithmic error. It lives in a notebook rather than the `make_plots.py` pipeline;
-`error_analysis/README.md` gives the model, the cell map and the known gaps.
+`error_analysis/README.md` gives the model and the cell map.
 
 ## Reproducibility status
 

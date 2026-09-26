@@ -59,22 +59,3 @@ notebook, each with a `provenance` field. Checked against `richardson.py`:
 The paper's Fig. 6 caption says these are "the same that were found in the optimization of Figures
 4 and 5". Until the original search output is recovered, `fig6_schedules.json` is the record that
 makes the figure reproducible.
-
-## Known gaps (worth fixing before the journal submission)
-
-1. **Schedules are hard-coded in the notebook.** Cells 26, 33, 34 and 35 paste `q_grid` and `b`
-   arrays literally. They should read `fig6_schedules.json` (or, once the provenance above is
-   resolved, the committed sidecars through `plotting.common.load_sidecar_schedules`) so the
-   numbers cannot drift.
-2. **The noise layer has no random seed**, so the right panel is not reproducible run to run. One
-   `np.random.default_rng(seed)` would fix it.
-3. **The Hamiltonian differs from the paper's Eq. (257).** The paper writes the field term as
-   `- h Σ Z_i`; the notebook also adds `h Σ X_i` (see `get_individual_hamiltonian_terms` and
-   `generate_heisenberg_hamiltonian`). Both the exact and the Trotterized operator include it, so
-   the figure is internally consistent, but either the paper equation or the code needs to change.
-4. **Output names** (`combined_trotter_plots.pdf`, `trotter_error_plot.pdf`) do not match the
-   repo's convention; the rest of the figures are written to `plots/<stem>.{png,pdf}`.
-5. `make_plots.py` does not run this notebook. Figure 6 is reproduced by opening it and running
-   all cells.
-6. **Cell 35 is the published Fig. 2(b).** The single-panel variant here, not
-   `plotting/plot_summary.py`, is what the paper's summary figure shows on the right.
