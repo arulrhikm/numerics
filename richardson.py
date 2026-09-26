@@ -35,16 +35,15 @@ RICHARDSON_K_DEFAULT: float = (4.0 / 3.0) * (math.e - 1.0)
 # pass an explicit cap via ``--brute-bnorm-sq-max`` instead.
 BRUTE_FORCE_B_NORM1_SQ_MAX_DEFAULT: float = 1e6
 
-# Pre-tabulated λ_comm geometric ratios (Lemma 52 of arXiv:2608.13862v1; the
-# "lemma57" names are historical). NOTE: the p = 1 and p = 4 entries are the
-# ratios already raised to 1 + 1/p (paper Eq. 254: 1.5035, 1.0445), but
-# ``compute_steps_*`` raise them to 1 + 1/p again; only p = 2 holds the bare
-# ratio. The published figures were made with these values, so they are kept
-# as-is; see README.md, "Known differences".
+# Pre-tabulated bare λ_comm geometric ratios R_p (Lemma 52 of arXiv:2608.13862v1;
+# the "lemma57" names are historical). Equal to ``lemma57_geometric_ratio(p)``.
+# ``compute_steps_*`` raise them to 1 + 1/p, giving the paper's Eq. 254 values
+# 1.5035, 1.1487, 1.0445. The arXiv v1 figures (tag ``figures-arxiv-v1``) were
+# made with the already-raised values at p = 1 and p = 4, i.e. raised twice.
 LEMMA57_GEOMETRIC_RATIO_BY_P: dict[int, float] = {
-    1: 1.5035,
+    1: 1.2262,
     2: 1.0968,
-    4: 1.0445,
+    4: 1.0354,
 }
 
 LAMBDA_SCALE_MODE: str = "lemma57_fixed"

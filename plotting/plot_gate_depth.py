@@ -87,7 +87,9 @@ def parse_args():
     parser.add_argument("--out-dir", type=str, default="plots", help="Output directory.")
     parser.add_argument("--output", type=str, default="gate_depth.png", help="Titled output filename.")
     add_shared_grid_args(parser)
-    parser.set_defaults(eps_log_max=np.log10(0.9))
+    # Fig. 5 uses only schedules with sample overhead ‖b‖₁² ≤ 10, as the paper
+    # states (the arXiv v1 figure was made at cap 100).
+    parser.set_defaults(eps_log_max=np.log10(0.9), brute_bnorm_sq_max=10.0)
     parser.add_argument("--orders", type=str, default="1,2,4", help="Comma-separated Trotter orders p.")
     add_shared_search_args(parser)
     parser.add_argument(

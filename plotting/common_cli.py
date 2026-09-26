@@ -6,7 +6,8 @@ import argparse
 from pathlib import Path
 
 
-DEFAULT_Q_MAX = 15
+# Brute-force domain q_k ∈ [1, 10], as stated in the paper (arXiv v1 figures used 15).
+DEFAULT_Q_MAX = 10
 
 
 def add_shared_grid_args(parser: argparse.ArgumentParser, default_q_max: int | None = None) -> None:

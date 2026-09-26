@@ -25,7 +25,8 @@ Note that `plots/summary.pdf` is not the published Figure 2. Its left panel is F
 right panel is the `p = 2` step-bound panel. The published Fig. 2(b) is the empirical-error panel
 from the notebook.
 
-The tag `figures-arxiv-v1` marks the script versions used for the arXiv figures.
+The tag `figures-arxiv-v1` marks the script versions used for the arXiv v1 figures. The figures in
+`plots/` have since been corrected; see [Reproducibility status](#reproducibility-status).
 
 ## Quick start
 
@@ -38,8 +39,8 @@ Figure 6 comes from a notebook. Open `error_analysis/empirical_extrapolation_err
 all cells. This takes a few minutes and needs `jupyter`, which is not in `requirements.txt`. The
 outputs are saved in the notebook, so you can see the figure without running it.
 
-The brute-force search at the paper's settings (`q_max = 15`, three caps, 50 precisions) takes tens
-of minutes and a few gigabytes of memory on a laptop. The search is deterministic, and a rerun with
+The brute-force search at the paper's settings (`q_max = 10`, three caps, 50 precisions) takes a few
+minutes on a laptop (v1's `q_max = 15` took tens of minutes and a few gigabytes). The search is deterministic, and a rerun with
 the default settings reproduces the committed sidecars byte for byte. To test the pipeline quickly,
 pass a smaller grid to both search scripts (under a minute):
 
@@ -81,12 +82,13 @@ and a brute-force optimized grid (`opt`). Marker color is the sample overhead `�
 candidates above a cap are rejected, and there is one curve for each cap in `{10, 100, 1000}`.
 
 Fig. 5 converts the same schedules to gate depth, meaning steps times the per-step cost `C_p`, for
-a plane-wave dual-basis Hamiltonian with `n = 100` basis functions. The left panel shows each
+a plane-wave dual-basis Hamiltonian with `n = 100` basis functions, using brute-force schedules
+with `‖b‖₁² ≤ 10`. The left panel shows each
 order, with an analytic `p = 6` Trotter line. The right panel compares the best Trotter formula
 over `p ∈ {1, 2, 4, 6}` with the best extrapolated schedule over `p ∈ {1, 2, 4}`.
 
 Fig. 2(a) is the gate-depth envelope with two "best extrapolated" curves, for caps 10 and 100.
-`plot_summary.py` reads it from the committed sidecars, so it matches the published figure.
+`plot_summary.py` reads it from the committed sidecars.
 
 Fig. 6 shows the operator-norm error of second-order Trotter and of the extrapolated operators
 built from the `p = 2` schedules, on an 8-qubit anisotropic Heisenberg chain, with and without a
@@ -96,52 +98,54 @@ algorithmic error, done in a notebook outside the `make_plots.py` pipeline.
 
 ## Reproducibility status
 
-Checked against [arXiv:2608.13862](https://arxiv.org/abs/2608.13862) on 2026-09-24.
+As of 2026-09-26, the figures in `plots/` differ from the ones published in
+[arXiv:2608.13862v1](https://arxiv.org/abs/2608.13862). Three bugs were fixed so that the code
+matches what the paper says it computes. The tag `figures-arxiv-v1` keeps the exact code and
+figures behind v1.
 
-| Paper figure | Reproduced by this repository? |
+| Paper figure | This repository |
 |---|---|
-| Fig. 4 | Yes, `plotting/plot_overhead.py` output matches the published panels |
-| Fig. 5 | Yes, `plotting/plot_gate_depth.py` output matches the published panels |
-| Fig. 2(a) | Yes, left panel of `plot_summary.py` |
-| Fig. 2(b) | Made by the notebook, not `plot_summary.py`; the committed `summary.pdf` has a different right panel |
-| Fig. 6 | Yes, from `error_analysis/fig6_schedules.json`; the search run that chose its brute-force grids is not in the repository |
+| Fig. 4 | `plotting/plot_overhead.py`, corrected (items 1, 2 below) |
+| Fig. 5 | `plotting/plot_gate_depth.py`, corrected (items 1–3 below) |
+| Fig. 2(a) | left panel of `plot_summary.py`, corrected (items 1, 2 below) |
+| Fig. 2(b) | made by the notebook, not `plot_summary.py`; the committed `summary.pdf` has a different right panel |
+| Fig. 6 | from `error_analysis/fig6_schedules.json`; the search run that chose its brute-force grids is not in the repository |
 
-Known differences between the paper text (arXiv v1) and the code that made its figures. Items 2–6
-concern the bound figures (2(a), 4, 5). The code is deliberately left as it is for all of them,
-because changing it would visibly change the published figures. None of them moves the ε ≈ 10⁻²
-crossover in Figs. 2(a) and 5.
+Fixed since v1. None of these moves the ε ≈ 10⁻² crossover in Figs. 2(a) and 5 (cap 10): the last
+grid point where extrapolation wins is still ε = 1.02 × 10⁻².
 
-1. The committed search does not reproduce the brute-force grids in Fig. 6. The five `wc`
-   schedules are the LKW closed form at `m = 2, 3, 4, 5, 7`, and `richardson.py` reproduces every
-   coefficient vector `b` in the figure exactly from its grid. But the eight `opt` grids are in no
-   committed sidecar, and the search does not return them at `q_max = 10` or `q_max = 15`, so they
-   come from an earlier run. `error_analysis/fig6_schedules.json` records them as used.
-2. The paper and the code use different `q_max`. The paper gives the brute-force domain as
-   `q_k ∈ [1, 10]`, but every committed sidecar records `q_min, q_max = 1, 15` and has grids that
-   reach 15. The published Figs. 4 and 5 match the `q_max = 15` output. A rerun with
-   `--q-max 10` raises the brute-force curves by up to 1.68× at `p = 1` and up to 10% at
-   `p = 2, 4`, and leaves the cap-10 crossover of Figs. 2(a)/5 at ε ≈ 1.02 × 10⁻².
-   The LKW grids are not bounded by `q_max` and reach `q = 83`.
-3. Fig. 5 and the lower envelope of Fig. 2(a) use the `‖b‖₁² ≤ 100` cap. The paper text and the
-   Fig. 5 caption say 10, and the Fig. 2(a) caption says "factor 10" although the panel draws both
-   caps. The cap-10 schedules are in `plots/gate_depth_multi_cap.params.json`; with them the
-   Fig. 5 crossover moves from ε ≈ 1.79 × 10⁻² to 1.02 × 10⁻².
-4. The λ_comm constant at `p = 1` and `p = 4`. `LEMMA57_GEOMETRIC_RATIO_BY_P` stores
-   `{1: 1.5035, 2: 1.0968, 4: 1.0445}`, and the step formulas raise it to `1 + 1/p`. At `p = 2`
-   that is the bare Lemma 52 ratio, so the result is the paper's 1.1487. At `p = 1` and `p = 4` the
-   stored values are already raised (paper Eq. 254), so the code uses 2.2605 and 1.0559 where the
-   paper says 1.5035 and 1.0445. The bare ratios are 1.2262 and 1.0354, and
-   `richardson.lemma57_geometric_ratio(p)` returns them. The published extrapolated curves are
-   therefore 1.50× too high at `p = 1` and 1.1% too high at `p = 4`, which is conservative against
-   extrapolation. The best-extrapolated envelope changes only at the three largest ε.
-5. Gate depth. The paper's gate-depth formula (Eqs. 239–240) carries the stage count as
-   `Υ^{2+1/p}`, but `compute_steps_gate_depth` uses `C_p^{1+1/p}`, the step-count scaling. Figs. 2(a)
-   and 5 follow the code: the `p = 6` Trotter line is ≈ 80 at ε = 1. Multiplying every curve by
-   its `C_p` (1, 2, 10, 50) leaves all crossovers unchanged, but it moves the curves and the
-   order at which Best Trotter switches.
-6. The prefactors `RICHARDSON_K_BY_P = {1: 2.7232, 2: 3.627, 4: 5.15485}` are fixed per order. The
-   paper describes `a(ε)` as refined for each target precision. The derivation of these values is
-   not in this repository.
+1. **λ_comm constant at `p = 1` and `p = 4`.** `LEMMA57_GEOMETRIC_RATIO_BY_P` held the ratios at
+   `p = 1, 4` already raised to `1 + 1/p` (paper Eq. 254), and the step formulas raised them again.
+   So v1 used 2.2605 and 1.0559 where the paper states 1.5035 and 1.0445. The table now holds the
+   bare Lemma 52 ratios `{1: 1.2262, 2: 1.0968, 4: 1.0354}`, equal to
+   `richardson.lemma57_geometric_ratio(p)`. As a result the `p = 1` extrapolated curves are 1.50×
+   lower than in v1, and the `p = 4` curves are 1.1% lower. `p = 2` is unchanged.
+2. **Brute-force domain.** The paper states `q_k ∈ [1, 10]`, but v1 searched `[1, 15]`. The default
+   `--q-max` is now 10. Relative to v1, this raises the brute-force curves by up to 1.68× at
+   `p = 1` and by up to 10% at `p = 2, 4`. The LKW grids are not bounded by `q_max`; they reach
+   `q = 83`.
+3. **Fig. 5 sample-overhead cap.** The paper states that Fig. 5 uses schedules with `‖b‖₁² ≤ 10`,
+   but v1 used 100. `plot_gate_depth.py` now defaults to cap 10. The Fig. 5 crossover moves from
+   ε ≈ 1.79 × 10⁻² (v1) to 1.02 × 10⁻².
+
+Remaining differences between the paper text and the code:
+
+4. **Fig. 6 grids.** The committed search does not reproduce the brute-force grids in Fig. 6. The
+   five `wc` schedules are the LKW closed form at `m = 2, 3, 4, 5, 7`, and `richardson.py`
+   reproduces every coefficient vector `b` in the figure exactly from its grid. But the eight `opt`
+   grids are in no committed sidecar, and the search does not return them at `q_max = 10` or
+   `q_max = 15`, so they come from an earlier run. `error_analysis/fig6_schedules.json` records them
+   as used.
+5. **Fig. 2(a) caption.** It says "factor 10", but the panel draws two envelopes, for caps 10 and
+   100.
+6. **Gate depth.** The paper's gate-depth formula (Eqs. 239–240) carries the stage count as
+   `Υ^{2+1/p}`, but `compute_steps_gate_depth` uses `C_p^{1+1/p}`, the step-count scaling, and
+   Figs. 2(a) and 5 follow the code: the `p = 6` Trotter line is ≈ 80 at ε = 1. Multiplying every
+   curve by its `C_p` (1, 2, 10, 50) would leave all crossovers unchanged but visibly move the
+   curves.
+7. **Prefactors.** `RICHARDSON_K_BY_P = {1: 2.7232, 2: 3.627, 4: 5.15485}` is fixed per order,
+   whereas the paper describes `a(ε)` as refined for each target precision. The derivation of these
+   values is not in this repository.
 
 Also note that `--n-sys` has no effect on any plotted number: `n` cancels in every ratio, and
 `compute_lambda_scale` ignores it. "`n = 100` basis functions" labels the setting but does not
@@ -150,7 +154,7 @@ change the curves.
 To check a fresh run against the committed sidecars:
 
 ```bash
-python make_plots.py -- --out-dir _verify     # tens of minutes, a few GB
+python make_plots.py -- --out-dir _verify     # a few minutes
 python verify_reproduction.py _verify         # or --settings-only for a quick look
 ```
 
@@ -186,8 +190,9 @@ one order as plain dicts. New studies should load schedules this way instead of 
 |---|---|---|
 | Trotter orders searched | `1, 2, 4` | `--orders` |
 | ε grid (log10 edges, points) | `-6`, `log10(0.9)`, `50` | `--eps-log-min`, `--eps-log-max`, `--eps-points` |
-| `q_min, q_max` (depth `m` also runs `1 … q_max`) | `1, 15` | `--q-min`, `--q-max` |
+| `q_min, q_max` (depth `m` also runs `1 … q_max`) | `1, 10` | `--q-min`, `--q-max` |
 | `‖b‖₁²` brute-force caps (Fig. 4) | `10, 100, 1000` | `--brute-bnorm-sq-caps` |
+| `‖b‖₁²` cap (Fig. 5, `plot_gate_depth.py`) | `10` | `--brute-bnorm-sq-max` |
 | System size `n` (gate depth only) | `100` | `--n-sys` |
 | Output directory | `plots` | `--out-dir` |
 
